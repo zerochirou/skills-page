@@ -1,6 +1,6 @@
 # skills-page
 
-An editorial repository workspace for structured learning materials—organizing **Skills**, **Sub-skills**, and **Units** in a clean, GitHub-inspired interface.
+An editorial repository workspace for structured learning materials—organizing **Skills**, **Sub-skills**, and **Units** in a clean, GitHub-inspired interface;
 
 ## Screenshots
 
