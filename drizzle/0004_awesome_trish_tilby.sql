@@ -1,0 +1,1 @@
+ALTER TABLE `skills` ADD `banner_image` text;

@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1794966635865,
+      "tag": "0000_big_stark_industries",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794966881906,
+      "tag": "0001_marvelous_leo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794993069605,
+      "tag": "0002_aspiring_robin_chapel",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1795000927886,
+      "tag": "0003_curvy_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795040431649,
+      "tag": "0004_awesome_trish_tilby",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795046732473,
+      "tag": "0005_fat_tana_nile",
+      "breakpoints": true
+    }
+  ]
+}

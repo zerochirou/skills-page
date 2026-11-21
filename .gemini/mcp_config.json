@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "codegen-memory": {
+      "args": [
+        "run"
+      ],
+      "command": "codegen",
+      "env": {
+        "CHROMA_PERSIST_DIR": "/Users/zerochirou/Developer/Projects/skills-page/.agents/memory/chroma_data"
+      }
+    }
+  }
+}
