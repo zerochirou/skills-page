@@ -20,7 +20,9 @@ import {
 const SUB_NAV_LINKS = [
   { label: "Explore Skills", href: "/skills" },
   { label: "How to Use", href: "/how-to-use" },
+  { label: "Leaderboard", href: "/skills" },
   { label: "About", href: "/about" },
+  { label: "Donate", href: "/donation" },
 ] as const;
 
 const WORKSPACE_LINKS = [
@@ -83,7 +85,7 @@ export function Header() {
             className="inline-flex items-center gap-2.5 text-primary transition-opacity hover:opacity-80 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             <FaviconBrandMark />
-            <span className="font-serif text-lg font-normal tracking-[-0.015em] text-primary">
+            <span className="font-serif text-lg font-semibold text-primary">
               Skills Page
             </span>
           </Link>
@@ -154,7 +156,7 @@ export function Header() {
                 >
                   {SUB_NAV_LINKS.map((item) => (
                     <Link
-                      key={item.href}
+                      key={`${item.label}-${item.href}`}
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className="flex min-h-[44px] items-center rounded-md px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
@@ -162,13 +164,6 @@ export function Header() {
                       {item.label}
                     </Link>
                   ))}
-                  <Link
-                    href="/#leaderboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex min-h-[44px] items-center rounded-md px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    Leaderboard
-                  </Link>
 
                   <div className="my-2 border-t border-hairline" />
 
@@ -220,7 +215,7 @@ export function Header() {
         >
           <div className="flex items-center gap-4">
             {SUB_NAV_LINKS.map((item, idx) => (
-              <React.Fragment key={item.href}>
+              <React.Fragment key={`${item.label}-${item.href}`}>
                 {idx > 0 ? (
                   <span
                     aria-hidden="true"
@@ -236,13 +231,6 @@ export function Header() {
               </React.Fragment>
             ))}
           </div>
-
-          <Link
-            href="/#leaderboard"
-            className="text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-          >
-            leaderboard
-          </Link>
         </nav>
       </div>
     </header>
