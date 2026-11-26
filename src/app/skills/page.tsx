@@ -191,9 +191,9 @@ export default function SkillsDirectoryPage({
           { name: "Explore Skills", path: "/skills" },
         ])}
       />
-      <main className="mx-auto max-w-5xl px-6 py-16">
+      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
         <header className="mb-8">
-          <h1 className="text-3xl font-normal tracking-tight text-ink">
+          <h1 className="font-serif text-4xl font-normal tracking-tight text-primary">
             Explore Skills
           </h1>
           <p className="mt-2 text-sm text-body">

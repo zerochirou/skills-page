@@ -19,6 +19,7 @@ import {
 } from "@/features/editor";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, fetcher, swrKeys } from "@/lib/swr";
 import { useEditorSidebar } from "../context/editor-sidebar-context";
@@ -667,6 +668,8 @@ export function SkillEditorWorkspace({
         </div>
       </header>
 
+      <Separator />
+
       {actionError ? (
         <Alert variant="destructive">
           <AlertTitle>Action failed</AlertTitle>
@@ -755,6 +758,10 @@ export function SkillEditorWorkspace({
           <SkillTableOfContents
             subSkills={data.subSkills}
             units={data.units}
+            onSelectSubSkill={(subSkillId) => {
+              setSaveState("saved");
+              router.push(`/dashboard/skills/${slug}/sub-skills/${subSkillId}`);
+            }}
             onSelectUnit={(unitId) => {
               setSaveState("saved");
               router.push(`/dashboard/skills/${slug}/units/${unitId}`);

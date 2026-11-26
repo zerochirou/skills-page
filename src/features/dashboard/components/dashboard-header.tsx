@@ -202,11 +202,11 @@ export function DashboardHeader() {
           <>
             <ThemeToggle />
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
-              className="border-[#f54e00] bg-[#f54e00] text-brand-foreground hover:bg-[#d04200] hover:text-brand-foreground"
+              className="bg-primary text-primary-foreground hover:bg-primary-active"
             >
               <PlusIcon data-icon="inline-start" />
               New Skill

@@ -1,18 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeftIcon,
-  ArrowUpRightIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ClockIcon,
-  FileTextIcon,
-  FolderIcon,
-  StarIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, ArrowUpRightIcon, FileTextIcon } from "lucide-react";
 import useSWR, { preload } from "swr";
 
 import BranchedMenu, { type BranchedMenuItem } from "@/components/branched-menu";
@@ -26,8 +17,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarkdownEditor, type WikiLinkItem } from "@/features/editor";
+import {
+  READING_HISTORY_KEY,
+  type ReadingHistoryItem,
+} from "@/features/home/components/editorial-hero";
 import type {
   PublicSkillPayload,
   PublicUnitSummary,
@@ -45,16 +41,6 @@ type ActiveTarget =
   | { kind: "unit"; unitId: number };
 
 const NOOP = () => {};
-
-function formatDate(isoDate: string): string {
-  const date = new Date(isoDate);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -84,6 +70,10 @@ export function PublicSkillViewer({
   const basePath = ownerSegment
     ? `/skills/${encodeURIComponent(ownerSegment)}/${encodeURIComponent(skill.slug)}`
     : `/skills/${encodeURIComponent(skill.slug)}`;
+
+  const contentSectionRef = useRef<HTMLElement>(null);
+  const shouldScrollToContentRef = useRef(false);
+
   const target = useMemo<ActiveTarget>(() => {
     const paramUnitId = params.unitId ? Number(params.unitId) : undefined;
     const paramSubSkillId = params.subSkillId
@@ -105,17 +95,77 @@ export function PublicSkillViewer({
         : { kind: "overview" };
   }, [initialSubSkillId, initialUnitId, params.subSkillId, params.unitId]);
 
+  const scrollToContent = useCallback(() => {
+    const el = contentSectionRef.current;
+    if (!el) return;
+    const isStackedViewport = window.innerWidth < 1024;
+    const rect = el.getBoundingClientRect();
+    if (isStackedViewport || rect.top < 0 || rect.top > 200) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!shouldScrollToContentRef.current) return;
+    shouldScrollToContentRef.current = false;
+    const raf = requestAnimationFrame(() => {
+      scrollToContent();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [target, scrollToContent]);
+
+  useEffect(() => {
+    try {
+      const entry: ReadingHistoryItem = {
+        title: skill.title,
+        href: basePath,
+        visitedAt: new Date().toISOString(),
+      };
+      const raw = window.localStorage.getItem(READING_HISTORY_KEY);
+      const existing: ReadingHistoryItem[] = raw ? JSON.parse(raw) : [];
+      const next = [
+        entry,
+        ...(Array.isArray(existing)
+          ? existing.filter((item) => item?.href !== basePath)
+          : []),
+      ].slice(0, 6);
+      window.localStorage.setItem(READING_HISTORY_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore storage failures in restricted browsing modes
+    }
+  }, [basePath, skill.title]);
+
   const navigateToTarget = useCallback(
     (nextTarget: ActiveTarget) => {
+      shouldScrollToContentRef.current = true;
+      const isSameTarget =
+        (nextTarget.kind === "overview" && target.kind === "overview") ||
+        (nextTarget.kind === "subSkill" &&
+          target.kind === "subSkill" &&
+          nextTarget.subSkillId === target.subSkillId) ||
+        (nextTarget.kind === "unit" &&
+          target.kind === "unit" &&
+          nextTarget.unitId === target.unitId);
+
+      if (isSameTarget) {
+        shouldScrollToContentRef.current = false;
+        scrollToContent();
+        return;
+      }
+
       if (nextTarget.kind === "overview") {
-        router.push(basePath);
+        router.push(basePath, { scroll: false });
       } else if (nextTarget.kind === "subSkill") {
-        router.push(`${basePath}/sub-skills/${nextTarget.subSkillId}`);
+        router.push(`${basePath}/sub-skills/${nextTarget.subSkillId}`, {
+          scroll: false,
+        });
       } else {
-        router.push(`${basePath}/units/${nextTarget.unitId}`);
+        router.push(`${basePath}/units/${nextTarget.unitId}`, {
+          scroll: false,
+        });
       }
     },
-    [basePath, router]
+    [basePath, router, scrollToContent, target]
   );
 
   const handleWikiLinkClick = useCallback(
@@ -137,7 +187,6 @@ export function PublicSkillViewer({
     [navigateToTarget]
   );
 
-  const [collapsedFolders, setCollapsedFolders] = useState<Record<number, boolean>>({});
   const [bannerFailed, setBannerFailed] = useState(false);
 
   const unitsBySubSkill = useMemo(() => {
@@ -155,7 +204,7 @@ export function PublicSkillViewer({
     return units.find((u) => u.id === target.unitId) ?? null;
   }, [target, units]);
 
-  const activeSubSkill = useMemo(() => {
+  const activeUnitParentSub = useMemo(() => {
     if (!activeUnitSummary) return null;
     return subSkills.find((s) => s.id === activeUnitSummary.subSkillId) ?? null;
   }, [activeUnitSummary, subSkills]);
@@ -188,13 +237,6 @@ export function PublicSkillViewer({
     dedupingInterval: 30_000,
   });
 
-  function toggleFolder(subSkillId: number) {
-    setCollapsedFolders((prev) => ({
-      ...prev,
-      [subSkillId]: !prev[subSkillId],
-    }));
-  }
-
   function handlePrefetchUnit(unitId: number) {
     if (!ownerSegment) return;
     void preload(
@@ -209,7 +251,7 @@ export function PublicSkillViewer({
   return (
     <main className="pb-20">
       {showBanner && skill.bannerImage ? (
-        <div className="relative h-[260px] w-full overflow-hidden sm:h-[340px] lg:h-[380px]">
+        <div className="relative h-[240px] w-full overflow-hidden sm:h-[320px] lg:h-[360px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={skill.bannerImage}
@@ -227,20 +269,18 @@ export function PublicSkillViewer({
             }}
           />
         </div>
-      ) : (
-        <div className="pt-20 sm:pt-24" />
-      )}
+      ) : null}
 
       <div
         className={cn(
-          "mx-auto max-w-5xl px-6",
-          showBanner ? "mt-8" : ""
+          "mx-auto max-w-7xl px-4 sm:px-6",
+          showBanner ? "mt-8" : "pt-8 sm:pt-10"
         )}
       >
         <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-ink"
+            className="inline-flex min-h-[36px] items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary"
           >
             <ArrowLeftIcon className="size-3.5" />
             <span>Back to leaderboard</span>
@@ -261,10 +301,10 @@ export function PublicSkillViewer({
           </div>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)] lg:gap-12">
           <aside
             aria-label="Repository contents"
-            className="min-w-0 self-start"
+            className="min-w-0 self-start lg:sticky lg:top-28"
           >
             <BranchedMenu
               items={[
@@ -303,26 +343,47 @@ export function PublicSkillViewer({
                 }
               }}
               color="var(--muted-foreground)"
-              accentColor="#f54e00"
+              accentColor="var(--primary)"
               lineColor="var(--border)"
-              width={260}
+              width={250}
             />
           </aside>
 
           <section
+            ref={contentSectionRef}
             aria-label="Document viewer"
-            className="min-w-0"
+            className="min-w-0 scroll-mt-28"
           >
             {target.kind === "overview" ? (
-              <div className="mb-8">
-                <h1 className="font-serif text-[34px] font-normal leading-[1.1] tracking-[-0.02em] text-ink sm:text-[42px]">
-                  {skill.title}
-                </h1>
-                {skill.summary ? (
-                  <p className="mt-4 max-w-2xl text-base leading-[1.6] text-body">
-                    {skill.summary}
-                  </p>
-                ) : null}
+              <div>
+                <header>
+                  <h1 className="font-serif text-[34px] font-normal leading-[1.1] tracking-[-0.02em] text-primary sm:text-[44px]">
+                    {skill.title}
+                  </h1>
+                  {skill.summary ? (
+                    <p className="mt-4 max-w-3xl text-base leading-[1.6] text-body">
+                      {skill.summary}
+                    </p>
+                  ) : null}
+                </header>
+
+                <Separator className="my-6" />
+
+                {skill.overview?.trim() ? (
+                  <MarkdownEditor
+                    key="overview"
+                    value={skill.overview}
+                    onChange={NOOP}
+                    wikiLinkItems={wikiLinkItems}
+                    onWikiLinkClick={handleWikiLinkClick}
+                    readOnly
+                    className="rounded-none border-0 bg-transparent"
+                  />
+                ) : (
+                  <div className="py-8 text-sm text-muted-foreground">
+                    No README overview provided for this skill yet.
+                  </div>
+                )}
               </div>
             ) : target.kind === "subSkill" ? (
               (() => {
@@ -342,29 +403,33 @@ export function PublicSkillViewer({
                 }
 
                 return (
-                  <div className="flex flex-col gap-6">
-                    <div>
-                      <h1 className="font-serif text-[30px] font-normal leading-[1.15] tracking-[-0.02em] text-ink sm:text-[36px]">
+                  <div className="flex flex-col">
+                    <header>
+                      <h1 className="font-serif text-[30px] font-normal leading-[1.15] tracking-[-0.02em] text-primary sm:text-[38px]">
                         {activeSubSkill.title}
                       </h1>
-                    </div>
+                    </header>
+
+                    <Separator className="my-6" />
 
                     {activeSubSkill.description?.trim() ? (
-                      <MarkdownEditor
-                        key={`sub-${activeSubSkill.id}`}
-                        value={activeSubSkill.description}
-                        onChange={NOOP}
-                        wikiLinkItems={wikiLinkItems}
-                        onWikiLinkClick={handleWikiLinkClick}
-                        readOnly
-                        className="rounded-none border-0 bg-transparent"
-                      />
+                      <div className="mb-8">
+                        <MarkdownEditor
+                          key={`sub-${activeSubSkill.id}`}
+                          value={activeSubSkill.description}
+                          onChange={NOOP}
+                          wikiLinkItems={wikiLinkItems}
+                          onWikiLinkClick={handleWikiLinkClick}
+                          readOnly
+                          className="rounded-none border-0 bg-transparent"
+                        />
+                      </div>
                     ) : null}
 
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          Table of Contents
+                        <h2 className="font-serif text-xl font-normal tracking-tight text-primary">
+                          Units
                         </h2>
                         <span className="font-mono text-xs text-muted-foreground">
                           {subSkillUnits.length}{" "}
@@ -411,7 +476,7 @@ export function PublicSkillViewer({
                                     }
                                     className="mt-2 block text-left"
                                   >
-                                    <CardTitle className="line-clamp-2 text-lg font-normal leading-snug tracking-tight text-foreground">
+                                    <CardTitle className="line-clamp-2 font-serif text-xl font-normal leading-snug tracking-tight text-foreground">
                                       {unit.title}
                                     </CardTitle>
                                     <CardDescription className="mt-1 truncate font-mono text-sm text-muted-foreground">
@@ -450,58 +515,60 @@ export function PublicSkillViewer({
                   </div>
                 );
               })()
-            ) : null}
-
-            {target.kind === "subSkill" ? null : target.kind === "overview" ? (
-              skill.overview?.trim() ? (
-                <MarkdownEditor
-                  key="overview"
-                  value={skill.overview}
-                  onChange={NOOP}
-                  wikiLinkItems={wikiLinkItems}
-                  onWikiLinkClick={handleWikiLinkClick}
-                  readOnly
-                  className="rounded-none border-0 bg-transparent"
-                />
-              ) : (
-                <div className="p-8 text-center text-sm text-muted-foreground">
-                  No README overview provided for this skill yet.
-                </div>
-              )
-            ) : unitLoading ? (
-              <div className="flex flex-col gap-3 p-6">
-                <Skeleton className="h-6 w-1/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            ) : unitError ? (
-              <div className="flex flex-col items-center gap-3 p-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Failed to load unit content.
-                </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void retryUnit()}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : unitDetail?.unit.content?.trim() ? (
-              <MarkdownEditor
-                key={`unit-${target.unitId}`}
-                value={unitDetail.unit.content}
-                onChange={NOOP}
-                wikiLinkItems={wikiLinkItems}
-                onWikiLinkClick={handleWikiLinkClick}
-                readOnly
-                className="rounded-none border-0 bg-transparent"
-              />
             ) : (
-              <div className="p-8 text-center text-sm text-muted-foreground">
-                This unit does not have any content yet.
+              <div>
+                <header>
+                  {activeUnitParentSub ? (
+                    <p className="mb-2 font-mono text-xs text-muted-foreground">
+                      {activeUnitParentSub.title}
+                      {activeUnitSummary?.estimatedMinutes
+                        ? ` · ${activeUnitSummary.estimatedMinutes} min`
+                        : ""}
+                    </p>
+                  ) : null}
+                  <h1 className="font-serif text-[30px] font-normal leading-[1.15] tracking-[-0.02em] text-primary sm:text-[38px]">
+                    {activeUnitSummary?.title ?? "Unit"}
+                  </h1>
+                </header>
+
+                <Separator className="my-6" />
+
+                {unitLoading ? (
+                  <div className="flex flex-col gap-3 py-4">
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                ) : unitError ? (
+                  <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Failed to load unit content.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void retryUnit()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : unitDetail?.unit.content?.trim() ? (
+                  <MarkdownEditor
+                    key={`unit-${target.unitId}`}
+                    value={unitDetail.unit.content}
+                    onChange={NOOP}
+                    wikiLinkItems={wikiLinkItems}
+                    onWikiLinkClick={handleWikiLinkClick}
+                    readOnly
+                    className="rounded-none border-0 bg-transparent"
+                  />
+                ) : (
+                  <div className="py-8 text-sm text-muted-foreground">
+                    This unit does not have any content yet.
+                  </div>
+                )}
               </div>
             )}
           </section>

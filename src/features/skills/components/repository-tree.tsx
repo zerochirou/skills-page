@@ -359,7 +359,7 @@ export function RepositoryTree({
           }
         }}
         color="var(--muted-foreground)"
-        accentColor="#f54e00"
+        accentColor="var(--primary)"
         lineColor="var(--border)"
         width={230}
       />

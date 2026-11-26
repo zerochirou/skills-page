@@ -1,14 +1,14 @@
 ---
 version: alpha
 name: Cursor-design-analysis
-description: An AI-first code editor whose marketing site reads like a quietly-confident developer-tools brand with a warm-cream editorial canvas (`#f7f7f4`) instead of the typical dark IDE atmosphere. Near-black warm ink (`#26251e`) carries body and display alike — display sits at weight 400 with negative letter-spacing for a magazine feel rather than a bold tech voice. The single brand voltage is **Cursor Orange** (`#f54e00`) reserved for primary CTAs and the wordmark. A signature pastel timeline palette (peach, mint, blue, lavender, gold) marks AI-action stages (Thinking / Reading / Editing / Grepping / Done) — only inside in-product timeline visualizations. Cards use minimal hairlines, no shadows, generous 80px section rhythm. CursorGothic for display/body, JetBrains Mono on every code surface (which is roughly half the page).
+description: Editorial technical knowledge and learning repository workspace ("Skills Page") built on a warm-cream canvas (`#f7f7f4`) with charcoal primary ink (`#312f30`) and `EB Garamond` serif display typography at weight 400. Code and index surfaces use `JetBrains Mono`. Depth comes from 1px hairlines (`#e6e5e0`) and white cards (`#ffffff`) with zero drop shadows.
 
 colors:
-  primary: "#f54e00"
-  primary-active: "#d04200"
-  ink: "#26251e"
+  primary: "#312f30"
+  primary-active: "#1f1d1e"
+  ink: "#312f30"
   body: "#5a5852"
-  body-strong: "#26251e"
+  body-strong: "#312f30"
   muted: "#807d72"
   muted-soft: "#a09c92"
   hairline: "#e6e5e0"
@@ -18,7 +18,7 @@ colors:
   canvas-soft: "#fafaf7"
   surface-card: "#ffffff"
   surface-strong: "#e6e5e0"
-  on-primary: "#ffffff"
+  on-primary: "#fafaf7"
   timeline-thinking: "#dfa88f"
   timeline-grep: "#9fc9a2"
   timeline-read: "#9fbbe0"

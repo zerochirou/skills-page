@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import {
-  Geist,
-  Geist_Mono,
+  EB_Garamond,
   Inter,
   JetBrains_Mono,
-  Newsreader,
-  Plus_Jakarta_Sans,
 } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -20,28 +17,17 @@ import {
   SITE_TAGLINE,
 } from "@/lib/seo";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -115,15 +101,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       suppressHydrationWarning
       className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        plusJakartaSans.variable,
+        "h-full antialiased",
+        inter.variable,
+        ebGaramond.variable,
         jetbrainsMono.variable,
-        newsreader.variable,
-        "font-sans",
-        inter.variable
+        "font-sans"
       )}
     >
       <body className="min-h-full flex flex-col">
