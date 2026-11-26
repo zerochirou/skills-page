@@ -20,7 +20,8 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": [
-      "eslint --fix"
+      "eslint --fix",
+      "react-doctor --no-supply-chain --yes"
     ]
   },
   "dependencies": {
@@ -91,6 +92,7 @@
     "husky": "^9.1.7",
     "jsdom": "^31.0.1",
     "lint-staged": "^17.6.1",
+    "react-doctor": "^0.9.23",
     "tailwindcss": "4.3.5",
     "typescript": "^5",
     "vitest": "^5.1.1",
