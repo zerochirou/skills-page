@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { HomeTemplate } from "@/features/home/components/home-template";
+import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About / skills-page",
+export const metadata: Metadata = createMetadata({
+  title: "About Skills Page",
   description:
-    "Learn about skills-page, an editorial repository workspace for organizing markdown notes, technical references, and reusable skills.",
-};
+    "Learn about Skills Page, an editorial repository workspace for organizing Markdown notes, technical references, equations, and reusable skills.",
+  path: "/about",
+  markdownUrl: "/llms.txt",
+  keywords: ["about skills page", "markdown repository", "technical knowledge base"],
+});
 
 const PRINCIPLES = [
   {
@@ -32,6 +37,12 @@ const PRINCIPLES = [
 export default function AboutPage() {
   return (
     <HomeTemplate>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "About", path: "/about" },
+        ])}
+      />
       <main className="mx-auto max-w-5xl px-6 py-20">
         <header className="max-w-2xl">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">

@@ -15,6 +15,7 @@ import {
   buildOgImageUrl,
   getSiteUrl,
   SITE_DESCRIPTION,
+  SITE_KEYWORDS,
   SITE_NAME,
   SITE_TAGLINE,
 } from "@/lib/seo";
@@ -51,21 +52,45 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 const defaultOgImage = buildOgImageUrl({
-  title: `${SITE_NAME} / ${SITE_TAGLINE}`,
+  title: `${SITE_NAME}: ${SITE_TAGLINE}`,
   subtitle: SITE_DESCRIPTION,
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
+  applicationName: SITE_NAME,
   title: {
-    default: `${SITE_NAME} / ${SITE_TAGLINE}`,
+    default: `${SITE_NAME} | ${SITE_TAGLINE}`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME, url: getSiteUrl() }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  manifest: "/manifest.webmanifest",
+  alternates: {
+    canonical: "/",
+    types: {
+      "text/markdown": "/llms.txt",
+    },
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   openGraph: {
-    title: `${SITE_NAME} / ${SITE_TAGLINE}`,
+    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     siteName: SITE_NAME,
+    url: "/",
     type: "website",
     images: [
       {
@@ -78,7 +103,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} / ${SITE_TAGLINE}`,
+    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     images: [defaultOgImage],
   },

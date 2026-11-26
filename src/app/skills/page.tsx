@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { HomeTemplate } from "@/features/home/components/home-template";
+import { createMetadata } from "@/lib/seo";
 import { SkillsDirectoryFilters } from "@/features/skills/components/skills-directory-filters";
 import { queryPublicSkills } from "@/features/skills/services/leaderboard.service";
 import { SkillCard } from "@/components/ui/skill-card";
@@ -20,10 +22,14 @@ import {
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const metadata: Metadata = {
-  title: "Explore Skills / skills-page",
-  description: "Search and filter all public skills.",
-};
+export const metadata: Metadata = createMetadata({
+  title: "Explore Skills",
+  description:
+    "Search and filter public technical skills, Markdown repositories, sub-skills, and learning units on Skills Page.",
+  path: "/skills",
+  markdownUrl: "/llms.txt",
+  keywords: ["explore skills", "public skill directory", "skills page directory"],
+});
 
 const PAGE_SIZE = 12;
 
@@ -179,6 +185,12 @@ export default function SkillsDirectoryPage({
 }) {
   return (
     <HomeTemplate>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "Explore Skills", path: "/skills" },
+        ])}
+      />
       <main className="mx-auto max-w-5xl px-6 py-16">
         <header className="mb-8">
           <h1 className="text-3xl font-normal tracking-tight text-ink">

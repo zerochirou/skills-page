@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRightIcon, BookOpenIcon } from "lucide-react";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { HomeTemplate } from "@/features/home";
+import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "How to Use | skills-page",
+export const metadata: Metadata = createMetadata({
+  title: "How to Use Skills Page",
   description:
-    "Visual walkthrough of skills-page: dashboard, navigation, skill creation, file tree, Markdown editor, banner picker, and profile settings.",
-};
+    "Visual walkthrough of Skills Page: dashboard, navigation, skill creation, file tree, Markdown editor, MathQuill equations, ImageKit uploads, and profile settings.",
+  path: "/how-to-use",
+  markdownUrl: "/llms.txt",
+  keywords: ["how to use skills page", "skills page guide", "markdown editor guide"],
+});
 
 interface GuideSection {
   step: string;
@@ -129,6 +134,12 @@ const SHORTCUTS = [
 export default function HowToUsePage() {
   return (
     <HomeTemplate>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "How to Use", path: "/how-to-use" },
+        ])}
+      />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-20 pt-24 sm:px-6">
         <header className="flex flex-col gap-4 border-b border-border pb-8">
           <span className="font-mono text-xs tracking-wide text-muted-foreground uppercase">

@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 import { AppSidebar } from "@/components/app-sidebar";
 import { SWRProvider } from "@/components/providers/swr-provider";
 import { Sidebar, SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
