@@ -1,11 +1,8 @@
 const MAX_DIMENSION = 1440;
 const TARGET_MAX_BYTES = 1_500_000;
-const ALLOWED_MIME_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-]);
+const IMAGE_FILENAME_EXT_RE = /\.(?:png|jpe?g|webp|gif|avif|bmp|tiff?|heic|svg)$/i;
+const DIRECT_IMAGE_URL_RE =
+  /^https?:\/\/[^\s<>"']+\.(?:png|jpe?g|webp|gif|avif|bmp)(?:\?[^\s<>"']*)?$/i;
 
 export interface CompressedImageResult {
   blob: Blob;
@@ -15,6 +12,19 @@ export interface CompressedImageResult {
   compressedSize: number;
   width?: number;
   height?: number;
+}
+
+export function isSupportedImageFile(file: File): boolean {
+  if (file.type && file.type.toLowerCase().startsWith("image/")) {
+    return true;
+  }
+  return IMAGE_FILENAME_EXT_RE.test(file.name);
+}
+
+export function isDirectImageUrl(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed || /\s/.test(trimmed)) return false;
+  return DIRECT_IMAGE_URL_RE.test(trimmed);
 }
 
 function replaceExtension(name: string, ext: string): string {
@@ -34,17 +44,24 @@ function canvasToBlob(
   });
 }
 
-async function decodeImageDimensions(
-  file: Blob
-): Promise<{ width: number; height: number; draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void; cleanup: () => void }> {
+async function decodeImageDimensions(file: Blob): Promise<{
+  width: number;
+  height: number;
+  draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
+  cleanup: () => void;
+}> {
   if (typeof createImageBitmap === "function") {
-    const bitmap = await createImageBitmap(file);
-    return {
-      width: bitmap.width,
-      height: bitmap.height,
-      draw: (ctx, w, h) => ctx.drawImage(bitmap, 0, 0, w, h),
-      cleanup: () => bitmap.close(),
-    };
+    try {
+      const bitmap = await createImageBitmap(file);
+      return {
+        width: bitmap.width,
+        height: bitmap.height,
+        draw: (ctx, w, h) => ctx.drawImage(bitmap, 0, 0, w, h),
+        cleanup: () => bitmap.close(),
+      };
+    } catch {
+      // Fallback to <img> element decoding (supports SVG and TIFF in Safari).
+    }
   }
 
   const objectUrl = URL.createObjectURL(file);
@@ -52,12 +69,12 @@ async function decodeImageDimensions(
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("Failed to decode image."));
+      el.onerror = () => reject(new Error("Failed to decode copied image."));
       el.src = objectUrl;
     });
     return {
-      width: img.naturalWidth || img.width,
-      height: img.naturalHeight || img.height,
+      width: img.naturalWidth || img.width || 800,
+      height: img.naturalHeight || img.height || 600,
       draw: (ctx, w, h) => ctx.drawImage(img, 0, 0, w, h),
       cleanup: () => URL.revokeObjectURL(objectUrl),
     };
@@ -70,9 +87,9 @@ async function decodeImageDimensions(
 export async function compressImageForEditor(
   file: File
 ): Promise<CompressedImageResult> {
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+  if (!isSupportedImageFile(file)) {
     throw new Error(
-      "Unsupported image type. Use PNG, JPEG, WebP, or GIF images."
+      "Unsupported image type. Copy or select a PNG, JPEG, WebP, GIF, or AVIF image."
     );
   }
 
@@ -161,18 +178,27 @@ export async function compressImageForEditor(
   }
 }
 
-export function dataUrlToImageFile(dataUrl: string, name = "pasted-image"): File | null {
-  const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/i.exec(
+export function dataUrlToImageFile(
+  dataUrl: string,
+  name = "pasted-image"
+): File | null {
+  const match = /^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i.exec(
     dataUrl.trim()
   );
   if (!match) return null;
 
   const mimeType = match[1].toLowerCase();
-  const binary = atob(match[2]);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  const base64Clean = match[2].replace(/\s+/g, "");
+  try {
+    const binary = atob(base64Clean);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const rawSubtype = mimeType.split("/")[1] || "png";
+    const ext = rawSubtype.includes("svg") ? "svg" : rawSubtype.split("+")[0];
+    return new File([bytes], `${name}.${ext}`, { type: mimeType });
+  } catch {
+    return null;
   }
-  const ext = mimeType.split("/")[1] || "png";
-  return new File([bytes], `${name}.${ext}`, { type: mimeType });
 }

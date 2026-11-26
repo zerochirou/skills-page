@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ClipboardEvent,
   type DragEvent,
@@ -36,12 +37,14 @@ import "katex/dist/katex.min.css";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { AlertCircleIcon, Loader2Icon } from "lucide-react";
+import { AlertCircleIcon, CheckIcon, CopyIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WikiLink } from "../extensions/wiki-link";
 import {
   compressImageForEditor,
   dataUrlToImageFile,
+  isDirectImageUrl,
+  isSupportedImageFile,
 } from "../lib/image-compression";
 import {
   countMarkdownImages,
@@ -83,6 +86,11 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [mode, setMode] = useState<"wysiwyg" | "markdown">("wysiwyg");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [copiedAction, setCopiedAction] = useState<"image" | "url" | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{
+    src: string;
+    alt: string;
+  } | null>(null);
   const [mediaNotice, setMediaNotice] = useState<{
     kind: "error" | "info";
     text: string;
@@ -94,6 +102,8 @@ export function MarkdownEditor({
     open: false,
     target: { mode: "inline", latex: "" },
   });
+
+  const markdownTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const imageCount = useMemo(() => countMarkdownImages(value), [value]);
 
@@ -177,17 +187,70 @@ export function MarkdownEditor({
     onUpdate({ editor: currentEditor }) {
       onChange(currentEditor.getMarkdown());
     },
+    onSelectionUpdate({ editor: currentEditor }) {
+      if (readOnly) return;
+      if (currentEditor.isActive("image")) {
+        const attrs = currentEditor.getAttributes("image");
+        const src = typeof attrs?.src === "string" ? attrs.src : "";
+        const alt = typeof attrs?.alt === "string" ? attrs.alt : "";
+        setSelectedImage(src ? { src, alt } : null);
+      } else {
+        setSelectedImage(null);
+      }
+    },
   });
 
-  const handleUploadImages = useCallback(
-    async (files: File[]) => {
-      if (!editor || readOnly || files.length === 0) return;
+  const getCurrentImageCount = useCallback(() => {
+    if (mode === "markdown" || !editor) {
+      return countMarkdownImages(value);
+    }
+    let docImages = 0;
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === "image") docImages += 1;
+    });
+    return Math.max(docImages, countMarkdownImages(editor.getMarkdown()));
+  }, [editor, mode, value]);
 
-      let docImages = 0;
-      editor.state.doc.descendants((node) => {
-        if (node.type.name === "image") docImages += 1;
-      });
-      const currentCount = Math.max(docImages, countMarkdownImages(editor.getMarkdown()));
+  const insertUploadedImage = useCallback(
+    (src: string, alt: string) => {
+      if (mode === "markdown") {
+        const textarea = markdownTextareaRef.current;
+        const snippet = `![${alt}](${src})`;
+        if (textarea) {
+          const start = textarea.selectionStart ?? value.length;
+          const end = textarea.selectionEnd ?? start;
+          const prefix =
+            start > 0 && !value.slice(0, start).endsWith("\n") ? "\n" : "";
+          const suffix =
+            end < value.length && !value.slice(end).startsWith("\n") ? "\n" : "";
+          const next = `${value.slice(0, start)}${prefix}${snippet}${suffix}${value.slice(end)}`;
+          onChange(next);
+          const cursorPos = start + prefix.length + snippet.length + suffix.length;
+          requestAnimationFrame(() => {
+            textarea.focus();
+            textarea.setSelectionRange(cursorPos, cursorPos);
+          });
+        } else {
+          onChange(value ? `${value}\n\n${snippet}` : snippet);
+        }
+        return;
+      }
+
+      editor?.chain().focus().setImage({ src, alt }).run();
+    },
+    [editor, mode, onChange, value]
+  );
+
+  const handleUploadImageSources = useCallback(
+    async (
+      sources: Array<
+        | { kind: "file"; file: File }
+        | { kind: "url"; url: string; alt?: string }
+      >
+    ) => {
+      if (readOnly || sources.length === 0) return;
+
+      const currentCount = getCurrentImageCount();
       const remaining = MAX_IMAGES_PER_DOCUMENT - currentCount;
 
       if (remaining <= 0) {
@@ -198,16 +261,82 @@ export function MarkdownEditor({
         return;
       }
 
-      const accepted = files.slice(0, remaining);
-      const skipped = files.length - accepted.length;
+      const accepted = sources.slice(0, remaining);
+      const skipped = sources.length - accepted.length;
 
       setIsUploadingImage(true);
       setMediaNotice(null);
 
       try {
         let runningCount = currentCount;
-        for (const file of accepted) {
-          const compressed = await compressImageForEditor(file);
+        for (const source of accepted) {
+          if (source.kind === "url") {
+            let isAlreadyImageKit = false;
+            try {
+              const parsed = new URL(source.url);
+              isAlreadyImageKit = parsed.hostname === "ik.imagekit.io";
+            } catch {
+              isAlreadyImageKit = false;
+            }
+
+            if (isAlreadyImageKit) {
+              insertUploadedImage(
+                source.url,
+                source.alt?.trim() || "image"
+              );
+              runningCount += 1;
+              continue;
+            }
+
+            let fetchedFile: File | null = null;
+            try {
+              const clientRes = await fetch(source.url);
+              if (clientRes.ok) {
+                const blob = await clientRes.blob();
+                if (blob.type.startsWith("image/")) {
+                  const ext = blob.type.split("/")[1]?.split("+")[0] || "png";
+                  fetchedFile = new File([blob], `copied-image.${ext}`, {
+                    type: blob.type,
+                  });
+                }
+              }
+            } catch {
+              fetchedFile = null;
+            }
+
+            const payload = new FormData();
+            let resolvedAlt = source.alt?.trim() || "copied-image";
+
+            if (fetchedFile) {
+              const compressed = await compressImageForEditor(fetchedFile);
+              payload.append("file", compressed.blob, compressed.fileName);
+              resolvedAlt =
+                source.alt?.trim() ||
+                compressed.fileName.replace(/\.[^.]+$/, "");
+            } else {
+              payload.append("imageUrl", source.url);
+            }
+            payload.append("currentImageCount", String(runningCount));
+
+            const response = await fetch("/api/images/upload", {
+              method: "POST",
+              body: payload,
+              credentials: "include",
+            });
+            const data = (await response.json().catch(() => ({}))) as {
+              url?: string;
+              error?: string;
+            };
+            if (!response.ok || !data.url) {
+              throw new Error(data.error || "Image upload failed.");
+            }
+
+            insertUploadedImage(data.url, resolvedAlt);
+            runningCount += 1;
+            continue;
+          }
+
+          const compressed = await compressImageForEditor(source.file);
           const payload = new FormData();
           payload.append("file", compressed.blob, compressed.fileName);
           payload.append("currentImageCount", String(runningCount));
@@ -227,15 +356,10 @@ export function MarkdownEditor({
             throw new Error(data.error || "Image upload failed.");
           }
 
-          editor
-            .chain()
-            .focus()
-            .setImage({
-              src: data.url,
-              alt: compressed.fileName.replace(/\.[^.]+$/, ""),
-            })
-            .run();
-
+          insertUploadedImage(
+            data.url,
+            compressed.fileName.replace(/\.[^.]+$/, "")
+          );
           runningCount += 1;
         }
 
@@ -257,7 +381,15 @@ export function MarkdownEditor({
         setIsUploadingImage(false);
       }
     },
-    [editor, readOnly]
+    [getCurrentImageCount, insertUploadedImage, readOnly]
+  );
+
+  const handleUploadImages = useCallback(
+    (files: File[]) =>
+      handleUploadImageSources(
+        files.map((file) => ({ kind: "file" as const, file }))
+      ),
+    [handleUploadImageSources]
   );
 
   useEffect(() => {
@@ -271,13 +403,15 @@ export function MarkdownEditor({
     }
   }, [editor, onWikiLinkClick, wikiLinkItems]);
 
-  function handlePasteCapture(event: ClipboardEvent<HTMLDivElement>) {
+  function handlePasteCapture(
+    event: ClipboardEvent<HTMLDivElement | HTMLTextAreaElement>
+  ) {
     if (readOnly) return;
     const clipboard = event.clipboardData;
     if (!clipboard) return;
 
-    const directFiles = Array.from(clipboard.files ?? []).filter((f) =>
-      f.type.startsWith("image/")
+    const directFiles = Array.from(clipboard.files ?? []).filter(
+      isSupportedImageFile
     );
 
     const itemFiles =
@@ -285,10 +419,15 @@ export function MarkdownEditor({
         ? directFiles
         : Array.from(clipboard.items ?? [])
             .filter(
-              (item) => item.kind === "file" && item.type.startsWith("image/")
+              (item) =>
+                item.kind === "file" &&
+                (item.type.startsWith("image/") || item.type === "")
             )
             .map((item) => item.getAsFile())
-            .filter((file): file is File => file !== null);
+            .filter(
+              (file): file is File =>
+                file !== null && isSupportedImageFile(file)
+            );
 
     if (itemFiles.length > 0) {
       event.preventDefault();
@@ -298,32 +437,119 @@ export function MarkdownEditor({
     }
 
     const html = clipboard.getData("text/html");
-    if (html && html.includes("data:image/")) {
-      const dataMatches = html.match(
-        /data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+/gi
-      );
-      if (dataMatches && dataMatches.length > 0) {
-        const converted = dataMatches
-          .map((uri, idx) => dataUrlToImageFile(uri, `pasted-${idx + 1}`))
-          .filter((f): f is File => f !== null);
-        if (converted.length > 0) {
-          event.preventDefault();
-          event.stopPropagation();
-          void handleUploadImages(converted);
+    const plainText = clipboard.getData("text/plain")?.trim() ?? "";
+
+    if (html && /<img\b/i.test(html)) {
+      const parsed = new DOMParser().parseFromString(html, "text/html");
+      const imgEls = Array.from(parsed.querySelectorAll("img[src]"));
+      const extractedSources: Array<
+        | { kind: "file"; file: File }
+        | { kind: "url"; url: string; alt?: string }
+      > = [];
+
+      imgEls.forEach((img, idx) => {
+        const src = img.getAttribute("src")?.trim() ?? "";
+        const alt = img.getAttribute("alt")?.trim() || undefined;
+        const w = img.getAttribute("width");
+        const h = img.getAttribute("height");
+        if (w === "1" && h === "1") return;
+
+        if (src.startsWith("data:image/")) {
+          const converted = dataUrlToImageFile(src, `pasted-${idx + 1}`);
+          if (converted) extractedSources.push({ kind: "file", file: converted });
+        } else if (src.startsWith("https://") || src.startsWith("http://")) {
+          extractedSources.push({ kind: "url", url: src, alt });
         }
+      });
+
+      const hasOnlyImages = !(parsed.body.textContent ?? "").trim();
+      if (extractedSources.length > 0 && (hasOnlyImages || isDirectImageUrl(plainText))) {
+        event.preventDefault();
+        event.stopPropagation();
+        void handleUploadImageSources(extractedSources);
+        return;
       }
+    }
+
+    if (plainText && isDirectImageUrl(plainText)) {
+      event.preventDefault();
+      event.stopPropagation();
+      void handleUploadImageSources([{ kind: "url", url: plainText }]);
     }
   }
 
-  function handleDropCapture(event: DragEvent<HTMLDivElement>) {
+  function handleDropCapture(
+    event: DragEvent<HTMLDivElement | HTMLTextAreaElement>
+  ) {
     if (readOnly) return;
-    const dropped = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
-      f.type.startsWith("image/")
+    const dropped = Array.from(event.dataTransfer?.files ?? []).filter(
+      isSupportedImageFile
     );
     if (dropped.length === 0) return;
     event.preventDefault();
     event.stopPropagation();
     void handleUploadImages(dropped);
+  }
+
+  async function handleCopySelectedImage() {
+    if (!selectedImage?.src || typeof navigator === "undefined") return;
+    try {
+      const res = await fetch(selectedImage.src, { mode: "cors" });
+      const blob = await res.blob();
+      let pngBlob: Blob = blob;
+
+      if (blob.type !== "image/png" && typeof document !== "undefined") {
+        const bitmapUrl = URL.createObjectURL(blob);
+        try {
+          const imgEl = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new globalThis.Image();
+            el.onload = () => resolve(el);
+            el.onerror = () => reject(new Error("Image decode failed"));
+            el.src = bitmapUrl;
+          });
+          const canvas = document.createElement("canvas");
+          canvas.width = imgEl.naturalWidth || imgEl.width;
+          canvas.height = imgEl.naturalHeight || imgEl.height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(imgEl, 0, 0);
+            const encoded = await new Promise<Blob | null>((resolve) =>
+              canvas.toBlob((b) => resolve(b), "image/png")
+            );
+            if (encoded) pngBlob = encoded;
+          }
+        } finally {
+          URL.revokeObjectURL(bitmapUrl);
+        }
+      }
+
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ [pngBlob.type || "image/png"]: pngBlob }),
+        ]);
+        setCopiedAction("image");
+        window.setTimeout(() => setCopiedAction(null), 1600);
+        return;
+      }
+    } catch {
+      // Fallback to copying image URL if image binary clipboard is restricted.
+    }
+
+    await handleCopySelectedImageUrl();
+  }
+
+  async function handleCopySelectedImageUrl() {
+    if (!selectedImage?.src || typeof navigator === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(selectedImage.src);
+      setCopiedAction("url");
+      window.setTimeout(() => setCopiedAction(null), 1600);
+    } catch {
+      setMediaNotice({
+        kind: "error",
+        text: "Clipboard access was blocked by the browser.",
+      });
+    }
   }
 
   function handleMathClick(event: MouseEvent<HTMLDivElement>) {
@@ -440,6 +666,50 @@ export function MarkdownEditor({
             </div>
           ) : null}
 
+          {mode === "wysiwyg" && selectedImage ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-4 py-1.5 text-xs">
+              <span className="truncate font-mono text-[11px] text-muted-foreground">
+                Selected image: {selectedImage.alt || "image"}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => void handleCopySelectedImage()}
+                  className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  {copiedAction === "image" ? (
+                    <CheckIcon className="size-3" />
+                  ) : (
+                    <CopyIcon className="size-3" />
+                  )}
+                  <span>{copiedAction === "image" ? "Copied" : "Copy Image"}</span>
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => void handleCopySelectedImageUrl()}
+                  className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <span>{copiedAction === "url" ? "Link Copied" : "Copy URL"}</span>
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    editor?.chain().focus().deleteSelection().run();
+                    setSelectedImage(null);
+                  }}
+                  aria-label="Remove selected image"
+                  className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] text-destructive transition-colors hover:bg-destructive/10"
+                >
+                  <Trash2Icon className="size-3" />
+                  <span>Remove</span>
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {mediaNotice ? (
             <div
               role={mediaNotice.kind === "error" ? "alert" : "status"}
@@ -476,8 +746,11 @@ export function MarkdownEditor({
         </div>
       ) : (
         <textarea
+          ref={markdownTextareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPasteCapture={handlePasteCapture}
+          onDropCapture={handleDropCapture}
           readOnly={readOnly}
           placeholder={placeholder}
           className="min-h-[320px] w-full resize-y bg-transparent px-4 py-3 font-mono text-[13px] leading-relaxed text-foreground outline-none"
