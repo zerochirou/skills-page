@@ -21,7 +21,7 @@ import FontFamily from "@tiptap/extension-font-family";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
-import { Mathematics } from "@tiptap/extension-mathematics";
+import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -162,7 +162,13 @@ export function MarkdownEditor({
       TableRow,
       TableHeader,
       TableCell,
-      Mathematics.configure({
+      BlockMath.configure({
+        katexOptions: {
+          displayMode: true,
+          throwOnError: false,
+        },
+      }),
+      InlineMath.configure({
         katexOptions: {
           throwOnError: false,
         },

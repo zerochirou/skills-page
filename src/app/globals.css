@@ -262,9 +262,14 @@ body {
   transition: background-color 150ms ease;
 }
 
+.tiptap-editor [data-type="inline-math"] {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .tiptap-editor [data-type="inline-math"] .katex {
-  font-size: 1.38em;
-  line-height: 1.25;
+  font-size: 1.85em;
+  line-height: 1.35;
 }
 
 .tiptap-editor .tiptap-mathematics-render--editable {
@@ -277,8 +282,8 @@ body {
 }
 
 .tiptap-editor div[data-type="block-math"] {
-  margin: 1rem 0;
-  padding: 1.15rem 1.25rem;
+  margin: 1.15rem 0;
+  padding: 1.35rem 1.5rem;
   overflow-x: auto;
   text-align: center;
   border: 1px solid var(--border);
@@ -287,13 +292,17 @@ body {
 }
 
 .tiptap-editor div[data-type="block-math"] .katex {
-  font-size: 1.75em;
-  line-height: 1.35;
+  font-size: 2.4em;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {
+  .tiptap-editor [data-type="inline-math"] .katex {
+    font-size: 1.55em;
+  }
+
   .tiptap-editor div[data-type="block-math"] .katex {
-    font-size: 1.5em;
+    font-size: 1.9em;
   }
 }
 
