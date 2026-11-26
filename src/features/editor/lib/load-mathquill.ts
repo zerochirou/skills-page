@@ -15,6 +15,9 @@ export interface MathQuillInterface {
       leftRightIntoCmdGoes?: "up" | "down";
       restrictMismatchedBrackets?: boolean;
       supSubsRequireOperand?: boolean;
+      autoSubscriptNumerals?: boolean;
+      charsThatBreakOutOfSupSub?: string;
+      sumStartsWithNEquals?: boolean;
       autoCommands?: string;
       autoOperatorNames?: string;
       handlers?: {
