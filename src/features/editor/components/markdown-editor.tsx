@@ -19,7 +19,6 @@ import {
 } from "@tiptap/extension-details";
 import FontFamily from "@tiptap/extension-font-family";
 import Highlight from "@tiptap/extension-highlight";
-import Image from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
 import Subscript from "@tiptap/extension-subscript";
@@ -39,6 +38,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { AlertCircleIcon, CheckIcon, CopyIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResizableImage } from "../extensions/resizable-image";
 import { WikiLink } from "../extensions/wiki-link";
 import {
   compressImageForEditor,
@@ -90,6 +90,7 @@ export function MarkdownEditor({
   const [selectedImage, setSelectedImage] = useState<{
     src: string;
     alt: string;
+    width: number | null;
   } | null>(null);
   const [mediaNotice, setMediaNotice] = useState<{
     kind: "error" | "info";
@@ -126,13 +127,29 @@ export function MarkdownEditor({
       CodeBlockLowlight.configure({
         lowlight,
       }),
-      Image.configure({
+      ResizableImage.configure({
         inline: false,
         allowBase64: false,
         HTMLAttributes: {
           loading: "lazy",
           decoding: "async",
         },
+        resize: !readOnly
+          ? {
+              enabled: true,
+              directions: [
+                "top-left",
+                "top-right",
+                "bottom-left",
+                "bottom-right",
+                "left",
+                "right",
+              ],
+              minWidth: 80,
+              minHeight: 48,
+              alwaysPreserveAspectRatio: true,
+            }
+          : false,
       }),
       Subscript,
       Superscript,
@@ -192,6 +209,18 @@ export function MarkdownEditor({
     },
     onUpdate({ editor: currentEditor }) {
       onChange(currentEditor.getMarkdown());
+      if (!readOnly && currentEditor.isActive("image")) {
+        const attrs = currentEditor.getAttributes("image");
+        const src = typeof attrs?.src === "string" ? attrs.src : "";
+        const alt = typeof attrs?.alt === "string" ? attrs.alt : "";
+        const parsedWidth =
+          typeof attrs?.width === "number"
+            ? attrs.width
+            : typeof attrs?.width === "string"
+              ? parseInt(attrs.width, 10) || null
+              : null;
+        setSelectedImage(src ? { src, alt, width: parsedWidth } : null);
+      }
     },
     onSelectionUpdate({ editor: currentEditor }) {
       if (readOnly) return;
@@ -199,7 +228,13 @@ export function MarkdownEditor({
         const attrs = currentEditor.getAttributes("image");
         const src = typeof attrs?.src === "string" ? attrs.src : "";
         const alt = typeof attrs?.alt === "string" ? attrs.alt : "";
-        setSelectedImage(src ? { src, alt } : null);
+        const parsedWidth =
+          typeof attrs?.width === "number"
+            ? attrs.width
+            : typeof attrs?.width === "string"
+              ? parseInt(attrs.width, 10) || null
+              : null;
+        setSelectedImage(src ? { src, alt, width: parsedWidth } : null);
       } else {
         setSelectedImage(null);
       }
@@ -544,6 +579,28 @@ export function MarkdownEditor({
     await handleCopySelectedImageUrl();
   }
 
+  function handleResizePreset(ratio: number | null) {
+    if (!editor || readOnly) return;
+    if (ratio === null) {
+      editor
+        .chain()
+        .focus()
+        .updateAttributes("image", { width: null, height: null })
+        .run();
+      return;
+    }
+    const availableWidth = Math.max(
+      240,
+      (editor.view.dom.clientWidth || 720) - 40
+    );
+    const nextWidth = Math.max(80, Math.round(availableWidth * ratio));
+    editor
+      .chain()
+      .focus()
+      .updateAttributes("image", { width: nextWidth, height: null })
+      .run();
+  }
+
   async function handleCopySelectedImageUrl() {
     if (!selectedImage?.src || typeof navigator === "undefined") return;
     try {
@@ -675,9 +732,39 @@ export function MarkdownEditor({
           {mode === "wysiwyg" && selectedImage ? (
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-4 py-1.5 text-xs">
               <span className="truncate font-mono text-[11px] text-muted-foreground">
-                Selected image: {selectedImage.alt || "image"}
+                {selectedImage.alt || "image"}
+                {selectedImage.width ? ` (${selectedImage.width}px)` : " (auto)"}
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div
+                  role="group"
+                  aria-label="Resize image presets"
+                  className="inline-flex items-center gap-1 pr-1"
+                >
+                  {(
+                    [
+                      { label: "25%", ratio: 0.25 },
+                      { label: "50%", ratio: 0.5 },
+                      { label: "75%", ratio: 0.75 },
+                      { label: "Full", ratio: null },
+                    ] as const
+                  ).map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleResizePreset(preset.ratio)}
+                      className={cn(
+                        "rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        preset.ratio === null &&
+                          selectedImage.width === null &&
+                          "border-primary text-foreground"
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
