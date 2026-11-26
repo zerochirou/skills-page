@@ -250,6 +250,7 @@ export function RepositoryTree({
           className="flex items-center gap-1.5 px-1.5 pb-1.5"
         >
           <Input
+            size="sm"
             value={newSubSkillTitle}
             onChange={(e) => setNewSubSkillTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -259,7 +260,7 @@ export function RepositoryTree({
               }
             }}
             placeholder="Folder name..."
-            className="h-7 text-xs focus-visible:border-foreground/40 focus-visible:ring-0"
+            className="text-xs"
             autoFocus
           />
           <Button type="submit" size="xs" className="h-7 shrink-0 px-2.5">
