@@ -2,7 +2,7 @@ import LatticeLoader from "@/components/lattice-loader";
 
 export default function DashboardLoading() {
   return (
-    <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-16">
+    <div className="flex min-h-full w-full flex-1 items-center justify-center px-4">
       <LatticeLoader
         label="Loading workspace"
         color="var(--primary)"

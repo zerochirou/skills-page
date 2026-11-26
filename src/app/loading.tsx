@@ -2,7 +2,7 @@ import LatticeLoader from "@/components/lattice-loader";
 
 export default function Loading() {
   return (
-    <div className="flex min-h-[60vh] w-full items-center justify-center px-4 py-16">
+    <div className="flex min-h-dvh w-full items-center justify-center px-4">
       <LatticeLoader
         label="Loading"
         color="var(--primary)"

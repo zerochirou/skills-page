@@ -11,7 +11,7 @@ import { getPublicSkillByOwnerAndSlug } from "@/features/skills/services/public-
 
 export function PublicSkillSkeleton() {
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-6xl items-center justify-center px-6 py-16">
+    <div className="mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center px-6">
       <LatticeLoader
         label="Loading skill"
         color="var(--primary)"
