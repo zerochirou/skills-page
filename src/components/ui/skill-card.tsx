@@ -23,14 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,8 +82,10 @@ export function SkillCard({
     setIsPending(true);
     try {
       await action();
-    } finally {
       setIsPending(false);
+    } catch (error) {
+      setIsPending(false);
+      throw error;
     }
   }
 
@@ -99,14 +94,14 @@ export function SkillCard({
       <Card
         className={
           showHeaderBanner
-            ? "gap-5 overflow-hidden rounded-[12px] border-border bg-card pt-0 pb-5 transition-colors hover:border-hairline-strong"
-            : "gap-5 rounded-[12px] border-border bg-card py-5 transition-colors hover:border-hairline-strong"
+            ? "gap-2 overflow-hidden rounded-[12px] border-border bg-card pt-0 pb-3.5 transition-colors hover:border-hairline-strong"
+            : "gap-2 rounded-[12px] border-border bg-card py-3.5 transition-colors hover:border-hairline-strong"
         }
       >
         {showHeaderBanner ? (
           <Link
             href={href}
-            className="relative block h-32 w-full overflow-hidden border-b border-border/60 bg-muted/60"
+            className="relative block h-32 w-full overflow-hidden bg-muted/60"
           >
             {bannerImage ? (
               <>
@@ -125,10 +120,14 @@ export function SkillCard({
                 </div>
               </div>
             )}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-card via-card/55 to-transparent"
+            />
           </Link>
         ) : null}
 
-        <CardHeader className="px-5">
+        <CardHeader className="px-5 pt-1 pb-1">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs text-muted-foreground">
             {date}
@@ -220,7 +219,7 @@ export function SkillCard({
           </DropdownMenu>
         </div>
 
-        <Link href={href} className="mt-2 block text-left">
+        <Link href={href} className="mt-1 block text-left">
           <CardTitle className="line-clamp-2 text-lg font-normal leading-snug tracking-tight text-foreground">
             {title}
           </CardTitle>
@@ -230,7 +229,7 @@ export function SkillCard({
         </Link>
       </CardHeader>
 
-      <CardFooter className="justify-between border-t border-border/60 px-5 pt-4">
+      <CardFooter className="justify-between border-t border-border/60 px-5 pt-2.5 pb-0">
         <div className="flex items-center -space-x-2">
           {members.map((member) => (
             <Avatar
@@ -257,15 +256,17 @@ export function SkillCard({
     </Card>
 
     <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete skill</DialogTitle>
-          <DialogDescription>
+      <FramedDialogContent
+        className="sm:max-w-md"
+        title="Delete skill"
+        description={
+          <>
             Are you sure you want to delete &ldquo;{title}&rdquo;? This action
             cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
+          </>
+        }
+      >
+        <CardFooter className="justify-end gap-2">
           <Button
             type="button"
             variant="outline"
@@ -284,8 +285,8 @@ export function SkillCard({
           >
             Delete
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </CardFooter>
+      </FramedDialogContent>
     </Dialog>
   </>
   );

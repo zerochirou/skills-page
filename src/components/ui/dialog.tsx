@@ -7,6 +7,14 @@ import { XIcon } from "lucide-react";
 import type React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameDescription,
+  CardFrameHeader,
+  CardFrameTitle,
+} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const DialogCreateHandle: typeof DialogPrimitive.createHandle =
@@ -207,6 +215,51 @@ export function DialogPanel({
         render,
       })}
     </ScrollArea>
+  );
+}
+
+export function FramedDialogContent({
+  title,
+  description,
+  headerAction,
+  titleClassName,
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPopup> & {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  headerAction?: React.ReactNode;
+  titleClassName?: string;
+}): React.ReactElement {
+  return (
+    <DialogPopup
+      className={cn(
+        "border-0 bg-transparent p-0 shadow-none before:hidden",
+        className,
+      )}
+      {...props}
+    >
+      <CardFrame className="w-full border-border">
+        <CardFrameHeader className="pr-10">
+          <CardFrameTitle
+            className={cn("text-base font-semibold leading-snug", titleClassName)}
+            render={<DialogTitle />}
+          >
+            {title}
+          </CardFrameTitle>
+          {description ? (
+            <CardFrameDescription render={<DialogDescription />}>
+              {description}
+            </CardFrameDescription>
+          ) : null}
+          {headerAction ? (
+            <CardFrameAction>{headerAction}</CardFrameAction>
+          ) : null}
+        </CardFrameHeader>
+        <Card className="border-border">{children}</Card>
+      </CardFrame>
+    </DialogPopup>
   );
 }
 

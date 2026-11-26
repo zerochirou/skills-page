@@ -40,7 +40,7 @@ function FaviconBrandMark({ className }: { className?: string }) {
       src="/favicon.ico"
       alt=""
       aria-hidden="true"
-      className={cn("size-7 rounded-sm object-contain", className)}
+      className={cn("size-9 rounded-sm object-contain", className)}
     />
   );
 }
@@ -86,7 +86,7 @@ export function Header() {
             className="inline-flex items-center gap-2.5 text-primary transition-opacity hover:opacity-80 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             <FaviconBrandMark />
-            <span className="font-serif text-lg font-semibold text-primary">
+            <span className="text-lg font-semibold text-primary">
               Skills Page
             </span>
           </Link>

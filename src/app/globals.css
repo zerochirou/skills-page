@@ -255,6 +255,32 @@ body {
   margin-bottom: 0.35rem;
 }
 
+.tiptap-editor h4 {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  font-weight: 600;
+  margin-top: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.tiptap-editor h5 {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 600;
+  margin-top: 0.7rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap-editor h6 {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+  margin-top: 0.65rem;
+  margin-bottom: 0.25rem;
+}
+
 .tiptap-editor p {
   margin-bottom: 0.75rem;
 }
@@ -534,6 +560,38 @@ body {
   color: var(--learn-fg);
   margin-top: 2rem;
   margin-bottom: 0.75rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.learning-prose h4 {
+  font-size: 1.0625rem;
+  line-height: var(--learn-lh-heading);
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  color: var(--learn-fg);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.learning-prose h5 {
+  font-size: 0.9375rem;
+  line-height: var(--learn-lh-heading);
+  font-weight: 600;
+  color: var(--learn-fg);
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.learning-prose h6 {
+  font-size: 0.875rem;
+  line-height: var(--learn-lh-heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
   scroll-margin-top: 5.5rem;
 }
 
