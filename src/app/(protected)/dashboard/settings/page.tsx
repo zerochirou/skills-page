@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { MinusIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CardPanel } from "@/components/ui/card";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
+  FramedDialogContent,
 } from "@/components/ui/dialog";
 import { EditProfileForm } from "@/features/profile/components/edit-profile-form";
 
@@ -93,12 +92,15 @@ export default function DashboardSettingsPage() {
                   </Button>
                 }
               />
-              <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-                <DialogHeader>
-                  <DialogTitle>Edit profile</DialogTitle>
-                </DialogHeader>
-                <EditProfileForm embedded />
-              </DialogContent>
+              <FramedDialogContent
+                className="sm:max-w-xl"
+                title="Edit profile"
+                description="Update your display name, bio, and public profile details."
+              >
+                <CardPanel className="max-h-[75vh] overflow-y-auto">
+                  <EditProfileForm embedded />
+                </CardPanel>
+              </FramedDialogContent>
             </Dialog>
           </div>
         </SettingsSection>

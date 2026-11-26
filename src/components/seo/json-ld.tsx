@@ -1,13 +1,20 @@
 import { getSiteUrl, SITE_ALTERNATE_NAMES, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
 export function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
+  const items = Array.isArray(data) ? data : [data];
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(data).replace(/</g, "\\u003c"),
-      }}
-    />
+    <>
+      {items.map((item, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(item).replace(/</g, "\\u003c"),
+          }}
+        />
+      ))}
+    </>
   );
 }
 

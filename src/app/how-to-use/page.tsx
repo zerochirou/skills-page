@@ -169,7 +169,6 @@ export default function HowToUsePage() {
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Button
               variant="default"
-              nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
               className="bg-primary text-primary-foreground hover:bg-primary-active"
             >
@@ -178,7 +177,6 @@ export default function HowToUsePage() {
             </Button>
             <Button
               variant="outline"
-              nativeButton={false}
               render={<Link href="/dashboard" />}
             >
               <BookOpenIcon data-icon="inline-start" />

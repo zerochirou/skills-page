@@ -4,11 +4,22 @@ import { useMemo } from "react";
 import { ListTreeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface TocHeading {
   index: number;
-  level: 1 | 2 | 3;
+  level: HeadingLevel;
   text: string;
 }
+
+const HEADING_INDENT_CLASSES: Record<HeadingLevel, string> = {
+  1: "pl-2.5 font-medium text-foreground/90",
+  2: "pl-3.5",
+  3: "pl-5 text-[11px]",
+  4: "pl-6 text-[11px]",
+  5: "pl-7 text-[11px]",
+  6: "pl-8 text-[11px]",
+};
 
 export function extractMarkdownHeadings(markdown: string): TocHeading[] {
   const headings: TocHeading[] = [];
@@ -23,10 +34,10 @@ export function extractMarkdownHeadings(markdown: string): TocHeading[] {
     }
     if (inFence) continue;
 
-    const match = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+    const match = /^(#{1,6})\s+(.+)$/.exec(trimmed);
     if (!match) continue;
 
-    const level = match[1].length as 1 | 2 | 3;
+    const level = match[1].length as HeadingLevel;
     const text = match[2].replace(/[*_`~]/g, "").trim();
     if (!text) continue;
 
@@ -56,7 +67,9 @@ export function TableOfContents({
     const editorEl = document.querySelector(".tiptap-editor");
     if (!editorEl) return;
 
-    const domHeadings = Array.from(editorEl.querySelectorAll("h1, h2, h3"));
+    const domHeadings = Array.from(
+      editorEl.querySelectorAll("h1, h2, h3, h4, h5, h6")
+    );
     const targetEl =
       domHeadings[heading.index] ??
       domHeadings.find(
@@ -93,9 +106,7 @@ export function TableOfContents({
               onClick={() => handleScrollTo(heading)}
               className={cn(
                 "-ml-px border-l border-transparent py-1 pr-2 text-left text-xs text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground",
-                heading.level === 1 && "pl-2.5 font-medium text-foreground/90",
-                heading.level === 2 && "pl-3.5",
-                heading.level === 3 && "pl-5 text-[11px]"
+                HEADING_INDENT_CLASSES[heading.level]
               )}
             >
               <span className="line-clamp-2">{heading.text}</span>

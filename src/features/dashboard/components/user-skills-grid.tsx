@@ -2,12 +2,22 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRightIcon, PlusIcon, SearchIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  BookOpenIcon,
+  LayoutGridIcon,
+  ListIcon,
+  PlusIcon,
+  SearchIcon,
+  Trash2Icon,
+} from "lucide-react";
 import useSWR, { preload, useSWRConfig } from "swr";
 import { authClient } from "@/features/auth/lib/auth-client";
 import { fetcher, swrKeys } from "@/lib/swr";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SkillCard } from "@/components/ui/skill-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +27,7 @@ export interface SkillSummaryRow {
   slug: string;
   title: string;
   summary: string | null;
+  bannerImage?: string | null;
   visibility: "public" | "private";
   status: "draft" | "published" | "archived";
   subSkillsCount: number;
@@ -59,6 +70,8 @@ export function UserSkillsGrid({
   const { mutate } = useSWRConfig();
   const { data: session } = authClient.useSession();
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [deleteTarget, setDeleteTarget] = useState<SkillSummaryRow | null>(null);
 
   const { data: skillsData, isLoading } = useSWR<{
     skills: SkillSummaryRow[];
@@ -101,7 +114,6 @@ export function UserSkillsGrid({
             <Button
               variant="ghost"
               size="sm"
-              nativeButton={false}
               render={<Link href="/dashboard/all" />}
             >
               View all ({totalCount})
@@ -114,14 +126,36 @@ export function UserSkillsGrid({
       {showSearch ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative w-full max-w-sm">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search your skills..."
               aria-label="Search your skills"
-              className="bg-card pl-9"
+              className="bg-card pl-8"
             />
+          </div>
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+            <Button
+              type="button"
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="icon-xs"
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              onClick={() => setViewMode("grid")}
+            >
+              <LayoutGridIcon />
+            </Button>
+            <Button
+              type="button"
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="icon-xs"
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+              onClick={() => setViewMode("list")}
+            >
+              <ListIcon />
+            </Button>
           </div>
         </div>
       ) : null}
@@ -141,7 +175,6 @@ export function UserSkillsGrid({
             <Button
               variant="outline"
               size="sm"
-              nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
             >
               <PlusIcon data-icon="inline-start" />
@@ -157,7 +190,7 @@ export function UserSkillsGrid({
             </p>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleSkills.map((skill) => (
             <div
@@ -171,6 +204,8 @@ export function UserSkillsGrid({
                 title={skill.title}
                 subtitle={skill.summary || `/${skill.slug}`}
                 timeLeft={`${skill.subSkillsCount} sub · ${skill.unitsCount} units`}
+                bannerImage={skill.bannerImage}
+                showHeaderBanner
                 members={[
                   {
                     name: editorName,
@@ -197,7 +232,122 @@ export function UserSkillsGrid({
             </div>
           ))}
         </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {visibleSkills.map((skill) => (
+            <Card
+              key={skill.id}
+              onMouseEnter={() =>
+                void preload(swrKeys.skills.detail(skill.slug), fetcher)
+              }
+              className="border-border py-0 transition-colors hover:border-hairline-strong"
+            >
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+              <Link
+                href={`/dashboard/skills/${skill.slug}`}
+                className="flex min-w-0 flex-1 items-center gap-3.5"
+              >
+                <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-md border border-border/60 bg-muted/60">
+                  {skill.bannerImage ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={skill.bannerImage}
+                        alt={skill.title}
+                        className="h-full w-full object-cover"
+                      />
+                    </>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted/80 via-background to-accent/60 text-muted-foreground">
+                      <BookOpenIcon className="size-4" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {skill.title}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {skill.summary || `/${skill.slug}`}
+                  </p>
+                </div>
+              </Link>
+
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
+                  {formatSkillDate(skill.updatedAt)} · {skill.visibility}
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="font-mono text-xs font-normal"
+                >
+                  {skill.subSkillsCount} sub · {skill.unitsCount} units
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  render={<Link href={`/dashboard/skills/${skill.slug}`} />}
+                >
+                  Open
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Delete ${skill.title}`}
+                  onClick={() => setDeleteTarget(skill)}
+                >
+                  <Trash2Icon className="size-3.5 text-destructive" />
+                </Button>
+              </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Delete skill"
+          description={
+            <>
+              Are you sure you want to delete &ldquo;{deleteTarget?.title}&rdquo;?
+              This action cannot be undone.
+            </>
+          }
+        >
+          <CardFooter className="justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                const slugToDelete = deleteTarget.slug;
+                setDeleteTarget(null);
+                await fetcher(`/api/skills/${slugToDelete}`, {
+                  method: "DELETE",
+                });
+                await mutate(swrKeys.skills.list());
+              }}
+            >
+              Delete
+            </Button>
+          </CardFooter>
+        </FramedDialogContent>
+      </Dialog>
     </section>
   );
 }

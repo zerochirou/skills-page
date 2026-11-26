@@ -5,10 +5,18 @@ import type { Editor } from "@tiptap/react";
 import {
   AtSignIcon,
   BoldIcon,
+  CheckIcon,
+  ChevronDownIcon,
   Code2Icon,
   CornerDownLeftIcon,
   GitBranchIcon,
+  Heading1Icon,
   Heading2Icon,
+  Heading3Icon,
+  Heading4Icon,
+  Heading5Icon,
+  Heading6Icon,
+  HeadingIcon,
   HighlighterIcon,
   ImagePlusIcon,
   IndentDecreaseIcon,
@@ -33,6 +41,16 @@ import {
   VideoIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CardFooter, CardPanel } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -57,6 +75,15 @@ interface EditorToolbarProps {
   onOpenEquationModal: () => void;
   onUploadImages: (files: File[]) => void;
 }
+
+const HEADING_OPTIONS = [
+  { level: 1, label: "Heading 1", prefix: "#", Icon: Heading1Icon },
+  { level: 2, label: "Heading 2", prefix: "##", Icon: Heading2Icon },
+  { level: 3, label: "Heading 3", prefix: "###", Icon: Heading3Icon },
+  { level: 4, label: "Heading 4", prefix: "####", Icon: Heading4Icon },
+  { level: 5, label: "Heading 5", prefix: "#####", Icon: Heading5Icon },
+  { level: 6, label: "Heading 6", prefix: "######", Icon: Heading6Icon },
+] as const;
 
 function ToolbarButton({
   label,
@@ -107,11 +134,17 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const [youtubeOpen, setYoutubeOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRaw = mode === "markdown";
   const inTable = Boolean(editor?.isActive("table"));
   const imageLimitReached = imageCount >= MAX_IMAGES_PER_DOCUMENT;
+  const activeHeading = HEADING_OPTIONS.find((option) =>
+    editor?.isActive("heading", { level: option.level })
+  );
+  const ActiveHeadingIcon = activeHeading?.Icon ?? HeadingIcon;
 
   function handleOpenLink() {
     if (!editor) return;
@@ -158,14 +191,59 @@ export function EditorToolbar({
       />
 
       <div className="flex shrink-0 flex-nowrap items-center gap-0.5">
-        <ToolbarButton
-          label="Heading 2"
-          active={editor?.isActive("heading", { level: 2 })}
-          disabled={isRaw || !editor}
-          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          <Heading2Icon />
-        </ToolbarButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={isRaw || !editor}
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isRaw || !editor}
+                aria-label={activeHeading ? activeHeading.label : "Heading"}
+                title={activeHeading ? activeHeading.label : "Heading (1–6)"}
+                className={cn(
+                  "h-7 gap-0.5 px-1.5 text-muted-foreground hover:text-foreground",
+                  activeHeading && "bg-muted text-foreground"
+                )}
+              />
+            }
+          >
+            <ActiveHeadingIcon className="size-4" />
+            <ChevronDownIcon className="size-3 opacity-70" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-44">
+            {HEADING_OPTIONS.map(({ level, label, prefix, Icon }) => {
+              const isActive = Boolean(editor?.isActive("heading", { level }));
+              return (
+                <DropdownMenuItem
+                  key={level}
+                  onClick={() =>
+                    editor?.chain().focus().toggleHeading({ level }).run()
+                  }
+                  className={cn(isActive && "bg-accent font-medium")}
+                >
+                  <Icon />
+                  <span className="flex-1">{label}</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {prefix}
+                  </span>
+                  {isActive ? <CheckIcon className="size-3.5 text-foreground" /> : null}
+                </DropdownMenuItem>
+              );
+            })}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => editor?.chain().focus().setParagraph().run()}
+              className={cn(!activeHeading && "bg-accent font-medium")}
+            >
+              <span className="flex-1">Paragraph</span>
+              {!activeHeading ? (
+                <CheckIcon className="size-3.5 text-foreground" />
+              ) : null}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ToolbarButton
           label="Bold"
           active={editor?.isActive("bold")}
@@ -365,10 +443,8 @@ export function EditorToolbar({
           label="Embed YouTube"
           disabled={isRaw || !editor}
           onClick={() => {
-            const url = window.prompt("YouTube URL");
-            if (url) {
-              editor?.chain().focus().setYoutubeVideo({ src: url }).run();
-            }
+            setYoutubeUrl("");
+            setYoutubeOpen(true);
           }}
         >
           <VideoIcon />
@@ -473,6 +549,59 @@ export function EditorToolbar({
           </Button>
         </div>
       </div>
+      <Dialog
+        open={youtubeOpen}
+        onOpenChange={(open) => {
+          setYoutubeOpen(open);
+          if (!open) setYoutubeUrl("");
+        }}
+      >
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Embed YouTube Video"
+          description="Paste a YouTube video URL to embed it into the document."
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const trimmed = youtubeUrl.trim();
+              if (!trimmed) return;
+              editor?.chain().focus().setYoutubeVideo({ src: trimmed }).run();
+              setYoutubeOpen(false);
+              setYoutubeUrl("");
+            }}
+          >
+            <CardPanel>
+              <Field>
+                <FieldLabel htmlFor="youtube-url-input">YouTube URL</FieldLabel>
+                <Input
+                  id="youtube-url-input"
+                  autoFocus
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                />
+              </Field>
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setYoutubeOpen(false);
+                  setYoutubeUrl("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!youtubeUrl.trim()}>
+                Embed
+              </Button>
+            </CardFooter>
+          </form>
+        </FramedDialogContent>
+      </Dialog>
     </div>
   );
 }

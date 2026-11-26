@@ -167,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 className="size-8 shrink-0 rounded-lg object-cover"
               />
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">Skills Page</span>
+                <span className="truncate font-semibold">Skills Page</span>
                 <span className="truncate text-xs text-muted-foreground">
                   Workspace
                 </span>

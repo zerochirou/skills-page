@@ -15,10 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  CardFrame,
+  CardFrameDescription,
+  CardFrameHeader,
+  CardFrameTitle,
+  CardPanel,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -132,12 +133,13 @@ export default function SignUpPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Sign up</CardTitle>
-        <CardDescription>Create a new account.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <CardFrame>
+      <CardFrameHeader>
+        <CardFrameTitle>Sign up</CardFrameTitle>
+        <CardFrameDescription>Create a new account.</CardFrameDescription>
+      </CardFrameHeader>
+      <Card>
+        <CardPanel className="space-y-4">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           {error ? (
             <p
@@ -321,7 +323,7 @@ export default function SignUpPage() {
               alt=""
               width={16}
               height={16}
-              className="size-4"
+              className="size-4 dark:invert"
               unoptimized
             />
             GitHub
@@ -337,7 +339,8 @@ export default function SignUpPage() {
             Sign in
           </Link>
         </p>
-      </CardContent>
-    </Card>
+        </CardPanel>
+      </Card>
+    </CardFrame>
   );
 }

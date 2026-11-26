@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  BookOpen,
   Copy,
   MoreVertical,
   Pencil,
@@ -22,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +45,8 @@ export interface SkillCardProps {
   subtitle: string;
   progress?: number;
   timeLeft: string;
+  bannerImage?: string | null;
+  showHeaderBanner?: boolean;
   members?: SkillCardMember[];
   href?: string;
   isOwner?: boolean;
@@ -57,6 +61,8 @@ export function SkillCard({
   title,
   subtitle,
   timeLeft,
+  bannerImage,
+  showHeaderBanner = false,
   members = [
     { name: "Alex", initials: "AL" },
     { name: "Sam", initials: "SM" },
@@ -69,20 +75,59 @@ export function SkillCard({
   onSeeAuthor,
 }: SkillCardProps) {
   const [isPending, setIsPending] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function handleAction(action?: () => void | Promise<void>) {
     if (!action || isPending) return;
     setIsPending(true);
     try {
       await action();
-    } finally {
       setIsPending(false);
+    } catch (error) {
+      setIsPending(false);
+      throw error;
     }
   }
 
   return (
-    <Card className="gap-5 rounded-[12px] border-border bg-card py-5 transition-colors hover:border-hairline-strong">
-      <CardHeader className="px-5">
+    <>
+      <Card
+        className={
+          showHeaderBanner
+            ? "gap-2 overflow-hidden rounded-[12px] border-border bg-card pt-0 pb-3.5 transition-colors hover:border-hairline-strong"
+            : "gap-2 rounded-[12px] border-border bg-card py-3.5 transition-colors hover:border-hairline-strong"
+        }
+      >
+        {showHeaderBanner ? (
+          <Link
+            href={href}
+            className="relative block h-32 w-full overflow-hidden bg-muted/60"
+          >
+            {bannerImage ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bannerImage}
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted/80 via-background to-accent/60">
+                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/80 px-3 py-1.5 text-xs text-muted-foreground">
+                  <BookOpen className="size-3.5" />
+                  <span className="font-mono">{title.slice(0, 1).toUpperCase() || "S"}</span>
+                </div>
+              </div>
+            )}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-card via-card/55 to-transparent"
+            />
+          </Link>
+        ) : null}
+
+        <CardHeader className="px-5 pt-1 pb-1">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs text-muted-foreground">
             {date}
@@ -139,9 +184,10 @@ export function SkillCard({
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
                         <DropdownMenuItem
+                          variant="destructive"
                           disabled={isPending}
-                          onClick={() => void handleAction(onDelete)}
-                          className="gap-2 text-destructive focus:text-destructive"
+                          onClick={() => setConfirmDeleteOpen(true)}
+                          className="gap-2"
                         >
                           <Trash2 className="size-3.5" />
                           <span>Delete</span>
@@ -173,7 +219,7 @@ export function SkillCard({
           </DropdownMenu>
         </div>
 
-        <Link href={href} className="mt-2 block text-left">
+        <Link href={href} className="mt-1 block text-left">
           <CardTitle className="line-clamp-2 text-lg font-normal leading-snug tracking-tight text-foreground">
             {title}
           </CardTitle>
@@ -183,7 +229,7 @@ export function SkillCard({
         </Link>
       </CardHeader>
 
-      <CardFooter className="justify-between border-t border-border/60 px-5 pt-4">
+      <CardFooter className="justify-between border-t border-border/60 px-5 pt-2.5 pb-0">
         <div className="flex items-center -space-x-2">
           {members.map((member) => (
             <Avatar
@@ -208,5 +254,40 @@ export function SkillCard({
         </Badge>
       </CardFooter>
     </Card>
+
+    <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+      <FramedDialogContent
+        className="sm:max-w-md"
+        title="Delete skill"
+        description={
+          <>
+            Are you sure you want to delete &ldquo;{title}&rdquo;? This action
+            cannot be undone.
+          </>
+        }
+      >
+        <CardFooter className="justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isPending}
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              void handleAction(onDelete);
+            }}
+          >
+            Delete
+          </Button>
+        </CardFooter>
+      </FramedDialogContent>
+    </Dialog>
+  </>
   );
 }

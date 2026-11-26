@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,18 +12,19 @@ import {
   FolderGit2Icon,
   InfoIcon,
   LayoutGridIcon,
-  PauseIcon,
-  PlayIcon,
   SearchIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { LeaderboardSkill } from "@/features/skills/services/leaderboard.service";
-import { cn } from "@/lib/utils";
 
 export const READING_HISTORY_KEY = "skills-page:reading-history";
+
+const INTRO_VIDEOS = [
+  "/assets/videos/flower.mp4",
+  "/assets/videos/math.mp4",
+] as const;
 
 export interface ReadingHistoryItem {
   title: string;
@@ -31,13 +32,6 @@ export interface ReadingHistoryItem {
   subtitle?: string;
   visitedAt: string;
 }
-
-type VideoChoice = "flower" | "math";
-
-const VIDEOS: Record<VideoChoice, { src: string; label: string }> = {
-  flower: { src: "/assets/videos/flower.mp4", label: "Flower" },
-  math: { src: "/assets/videos/math.mp4", label: "Math" },
-};
 
 const PRIMARY_SIDEBAR_LINKS = [
   { label: "Explore Skills", href: "/skills", icon: CompassIcon },
@@ -99,16 +93,8 @@ export function EditorialHero({
   recentSkills?: LeaderboardSkill[];
 }) {
   const router = useRouter();
-  const { resolvedTheme } = useTheme();
-  const mounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false
-  );
-
-  const [manualVideo, setManualVideo] = useState<VideoChoice | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [videoIndex, setVideoIndex] = useState(0);
 
   const historyRaw = useSyncExternalStore(
     emptySubscribe,
@@ -116,38 +102,6 @@ export function EditorialHero({
     () => "[]"
   );
   const historyItems = useMemo(() => parseStoredHistory(historyRaw), [historyRaw]);
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const activeVideo: VideoChoice =
-    manualVideo ?? (mounted && resolvedTheme === "dark" ? "math" : "flower");
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isPlaying) {
-      void video.play().catch(() => {
-        setIsPlaying(false);
-      });
-    } else {
-      video.pause();
-    }
-  }, [activeVideo, isPlaying]);
-
-  function handleTogglePlay() {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      setIsPlaying(true);
-    } else {
-      setIsPlaying(false);
-    }
-  }
-
-  function handleSelectVideo(choice: VideoChoice) {
-    setManualVideo(choice);
-    setIsPlaying(true);
-  }
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -181,78 +135,47 @@ export function EditorialHero({
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
           {/* Left main editorial column */}
-          <div className="py-8 sm:py-10 lg:py-12 lg:pr-10">
+          <div className="flex flex-col items-center py-8 text-center sm:py-10 lg:items-start lg:py-12 lg:pr-10 lg:text-left">
             <h1 className="font-serif text-4xl font-normal leading-[1.08] tracking-[-0.02em] text-primary sm:text-5xl lg:text-[52px]">
               Skills Page
             </h1>
-            <p className="mt-3 max-w-xl font-serif text-lg leading-snug text-body sm:text-[19px]">
+            <p className="mx-auto mt-3 max-w-xl font-serif text-lg leading-snug text-body sm:text-[19px] lg:mx-0">
               Knowledge becomes clearer when it has structure. Organize
               technical skills, Markdown units, equations, and diagrams in one
               living repository.
             </p>
 
             {/* Video showcase */}
-            <div className="group relative mt-7 aspect-video w-full overflow-hidden rounded-[12px] border border-hairline bg-[#111010]">
+            <div className="relative mx-auto mt-7 aspect-video w-full max-w-3xl overflow-hidden rounded-[16px] border border-hairline bg-[#111010] lg:mx-0 lg:max-w-none lg:rounded-[12px]">
               <video
-                ref={videoRef}
-                key={activeVideo}
-                src={`${VIDEOS[activeVideo].src}#t=0.2`}
-                loop
+                key={INTRO_VIDEOS[videoIndex]}
+                src={INTRO_VIDEOS[videoIndex]}
+                autoPlay
                 muted
                 playsInline
-                preload="metadata"
-                aria-label={`${VIDEOS[activeVideo].label} showcase video`}
-                onClick={handleTogglePlay}
-                className="size-full cursor-pointer object-cover"
-              />
-
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10"
-              />
-
-              <button
-                type="button"
-                onClick={handleTogglePlay}
-                aria-label={
-                  isPlaying ? "Pause showcase video" : "Play showcase video"
+                preload="auto"
+                onEnded={() =>
+                  setVideoIndex((prev) => (prev + 1) % INTRO_VIDEOS.length)
                 }
-                className={cn(
-                  "absolute top-1/2 left-1/2 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-sm transition-all hover:scale-105 hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
-                  isPlaying
-                    ? "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                    : "opacity-100"
-                )}
-              >
-                {isPlaying ? (
-                  <PauseIcon className="size-5" />
-                ) : (
-                  <PlayIcon className="ml-0.5 size-5 fill-current" />
-                )}
-              </button>
-
-              <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full border border-white/20 bg-black/55 p-1 backdrop-blur-sm">
-                {(Object.keys(VIDEOS) as VideoChoice[]).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleSelectVideo(key)}
-                    aria-pressed={activeVideo === key}
-                    className={cn(
-                      "min-h-[28px] rounded-full px-3 text-xs font-medium transition-colors",
-                      activeVideo === key
-                        ? "bg-white text-[#312f30]"
-                        : "text-white/80 hover:text-white"
-                    )}
-                  >
-                    {VIDEOS[key].label}
-                  </button>
-                ))}
-              </div>
+                aria-label="Skills Page intro video"
+                className="size-full object-cover grayscale"
+              />
             </div>
 
-            {/* 3-column editorial summary */}
-            <div className="mt-8 grid gap-6 text-sm leading-relaxed text-body sm:grid-cols-3">
+            {/* Mobile centered summary */}
+            <p className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-body lg:hidden">
+              Skills Page is an open repository workspace built for organizing
+              technical notes, sub-skills, and reusable learning units in a
+              clean hierarchy. Author documents in Markdown with interactive
+              MathQuill equations, Mermaid diagrams, and{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-primary">
+                @
+              </code>{" "}
+              wiki-links.
+            </p>
+
+            {/* Desktop 3-column editorial summary */}
+            <div className="mt-8 hidden gap-6 text-sm leading-relaxed text-body lg:grid lg:grid-cols-3">
               <p>
                 Skills Page is an open repository workspace built for
                 organizing technical notes, sub-skills, and reusable learning

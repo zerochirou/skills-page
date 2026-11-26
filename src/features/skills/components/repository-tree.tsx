@@ -14,13 +14,8 @@ import {
 } from "lucide-react";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/branched-menu";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { CardFooter, CardPanel } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -219,6 +214,10 @@ export function RepositoryTree({
     title: string;
     initialTitle: string;
   } | null>(null);
+  const [deletePrompt, setDeletePrompt] = useState<{
+    subSkillId: number;
+    title: string;
+  } | null>(null);
 
   return (
     <div
@@ -238,47 +237,14 @@ export function RepositoryTree({
           variant="ghost"
           size="icon-xs"
           aria-label="Add sub-skill folder"
-          onClick={() => setAddingSubSkill((prev) => !prev)}
+          onClick={() => {
+            setNewSubSkillTitle("");
+            setAddingSubSkill(true);
+          }}
         >
           <Plus />
         </Button>
       </div>
-
-      {addingSubSkill ? (
-        <form
-          onSubmit={submitNewSubSkill}
-          className="flex items-center gap-1.5 px-1.5 pb-1.5"
-        >
-          <Input
-            value={newSubSkillTitle}
-            onChange={(e) => setNewSubSkillTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setAddingSubSkill(false);
-                setNewSubSkillTitle("");
-              }
-            }}
-            placeholder="Folder name..."
-            className="h-7 text-xs focus-visible:border-foreground/40 focus-visible:ring-0"
-            autoFocus
-          />
-          <Button type="submit" size="xs" className="h-7 shrink-0 px-2.5">
-            Add
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            className="h-7 shrink-0 px-2 text-muted-foreground"
-            onClick={() => {
-              setAddingSubSkill(false);
-              setNewSubSkillTitle("");
-            }}
-          >
-            Cancel
-          </Button>
-        </form>
-      ) : null}
 
       <BranchedMenu
         items={[
@@ -319,8 +285,13 @@ export function RepositoryTree({
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => void onDeleteSubSkill(sub.id)}
+                    variant="destructive"
+                    onClick={() =>
+                      setDeletePrompt({
+                        subSkillId: sub.id,
+                        title: sub.title,
+                      })
+                    }
                   >
                     Delete
                   </DropdownMenuItem>
@@ -365,15 +336,52 @@ export function RepositoryTree({
       />
 
       <Dialog
+        open={addingSubSkill}
+        onOpenChange={(open) => {
+          setAddingSubSkill(open);
+          if (!open) setNewSubSkillTitle("");
+        }}
+      >
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="New sub-skill"
+          description="Create a new folder to organize related units."
+        >
+          <form onSubmit={submitNewSubSkill} className="flex flex-col">
+            <CardPanel>
+              <Input
+                autoFocus
+                placeholder="Sub-skill title"
+                value={newSubSkillTitle}
+                onChange={(e) => setNewSubSkillTitle(e.target.value)}
+              />
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAddingSubSkill(false);
+                  setNewSubSkillTitle("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!newSubSkillTitle.trim()}>
+                Create
+              </Button>
+            </CardFooter>
+          </form>
+        </FramedDialogContent>
+      </Dialog>
+
+      <Dialog
         open={unitPrompt !== null}
         onOpenChange={(open) => {
           if (!open) setUnitPrompt(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New unit</DialogTitle>
-          </DialogHeader>
+        <FramedDialogContent className="sm:max-w-md" title="New unit">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -383,19 +391,21 @@ export function RepositoryTree({
               void onCreateUnit(unitPrompt.subSkillId, trimmed);
               setUnitPrompt(null);
             }}
-            className="flex flex-col gap-4"
+            className="flex flex-col"
           >
-            <Input
-              autoFocus
-              placeholder="Unit title"
-              value={unitPrompt?.title ?? ""}
-              onChange={(e) =>
-                setUnitPrompt((prev) =>
-                  prev ? { ...prev, title: e.target.value } : null
-                )
-              }
-            />
-            <DialogFooter>
+            <CardPanel>
+              <Input
+                autoFocus
+                placeholder="Unit title"
+                value={unitPrompt?.title ?? ""}
+                onChange={(e) =>
+                  setUnitPrompt((prev) =>
+                    prev ? { ...prev, title: e.target.value } : null
+                  )
+                }
+              />
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -409,9 +419,9 @@ export function RepositoryTree({
               >
                 Create
               </Button>
-            </DialogFooter>
+            </CardFooter>
           </form>
-        </DialogContent>
+        </FramedDialogContent>
       </Dialog>
 
       <Dialog
@@ -420,10 +430,7 @@ export function RepositoryTree({
           if (!open) setRenamePrompt(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename sub-skill</DialogTitle>
-          </DialogHeader>
+        <FramedDialogContent className="sm:max-w-md" title="Rename sub-skill">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -434,19 +441,21 @@ export function RepositoryTree({
               }
               setRenamePrompt(null);
             }}
-            className="flex flex-col gap-4"
+            className="flex flex-col"
           >
-            <Input
-              autoFocus
-              placeholder="Sub-skill title"
-              value={renamePrompt?.title ?? ""}
-              onChange={(e) =>
-                setRenamePrompt((prev) =>
-                  prev ? { ...prev, title: e.target.value } : null
-                )
-              }
-            />
-            <DialogFooter>
+            <CardPanel>
+              <Input
+                autoFocus
+                placeholder="Sub-skill title"
+                value={renamePrompt?.title ?? ""}
+                onChange={(e) =>
+                  setRenamePrompt((prev) =>
+                    prev ? { ...prev, title: e.target.value } : null
+                  )
+                }
+              />
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -460,9 +469,48 @@ export function RepositoryTree({
               >
                 Save
               </Button>
-            </DialogFooter>
+            </CardFooter>
           </form>
-        </DialogContent>
+        </FramedDialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletePrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletePrompt(null);
+        }}
+      >
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Delete sub-skill"
+          description={
+            <>
+              Are you sure you want to delete &ldquo;{deletePrompt?.title}&rdquo;
+              and all its units? This action cannot be undone.
+            </>
+          }
+        >
+          <CardFooter className="justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeletePrompt(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (!deletePrompt) return;
+                void onDeleteSubSkill(deletePrompt.subSkillId);
+                setDeletePrompt(null);
+              }}
+            >
+              Delete
+            </Button>
+          </CardFooter>
+        </FramedDialogContent>
       </Dialog>
     </div>
   );

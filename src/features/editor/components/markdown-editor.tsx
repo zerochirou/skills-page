@@ -61,6 +61,143 @@ import { MermaidNode } from "./mermaid-node";
 
 const lowlight = createLowlight(common);
 
+async function copyImageBlobToClipboard(src: string): Promise<boolean> {
+  if (typeof navigator === "undefined") return false;
+  try {
+    const res = await fetch(src, { mode: "cors" });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    let pngBlob: Blob = blob;
+
+    if (blob.type !== "image/png" && typeof document !== "undefined") {
+      const bitmapUrl = URL.createObjectURL(blob);
+      try {
+        const imgEl = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const el = new globalThis.Image();
+          el.onload = () => resolve(el);
+          el.onerror = () => reject(new Error("Image decode failed"));
+          el.src = bitmapUrl;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = imgEl.naturalWidth || imgEl.width;
+        canvas.height = imgEl.naturalHeight || imgEl.height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(imgEl, 0, 0);
+          const encoded = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob((b) => resolve(b), "image/png")
+          );
+          if (encoded) pngBlob = encoded;
+        }
+      } finally {
+        URL.revokeObjectURL(bitmapUrl);
+      }
+    }
+
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new ClipboardItem({ [pngBlob.type || "image/png"]: pngBlob }),
+      ]);
+      return true;
+    }
+  } catch {
+    // Fallback to copying image URL if image binary clipboard is restricted.
+  }
+  return false;
+}
+
+type ImageUploadSource =
+  | { kind: "file"; file: File }
+  | { kind: "url"; url: string; alt?: string };
+
+async function uploadImageSource(
+  source: ImageUploadSource,
+  runningCount: number
+): Promise<{ url: string; alt: string }> {
+  if (source.kind === "url") {
+    let isAlreadyImageKit = false;
+    try {
+      const parsed = new URL(source.url);
+      isAlreadyImageKit = parsed.hostname === "ik.imagekit.io";
+    } catch {
+      isAlreadyImageKit = false;
+    }
+
+    if (isAlreadyImageKit) {
+      return { url: source.url, alt: source.alt?.trim() || "image" };
+    }
+
+    let fetchedFile: File | null = null;
+    try {
+      const clientRes = await fetch(source.url);
+      if (clientRes.ok) {
+        const blob = await clientRes.blob();
+        if (blob.type.startsWith("image/")) {
+          const ext = blob.type.split("/")[1]?.split("+")[0] || "png";
+          fetchedFile = new File([blob], `copied-image.${ext}`, {
+            type: blob.type,
+          });
+        }
+      }
+    } catch {
+      fetchedFile = null;
+    }
+
+    const payload = new FormData();
+    let resolvedAlt = source.alt?.trim() || "copied-image";
+
+    if (fetchedFile) {
+      const compressed = await compressImageForEditor(fetchedFile);
+      payload.append("file", compressed.blob, compressed.fileName);
+      resolvedAlt =
+        source.alt?.trim() || compressed.fileName.replace(/\.[^.]+$/, "");
+    } else {
+      payload.append("imageUrl", source.url);
+    }
+    payload.append("currentImageCount", String(runningCount));
+
+    const response = await fetch("/api/images/upload", {
+      method: "POST",
+      body: payload,
+      credentials: "include",
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      url?: string;
+      error?: string;
+    };
+    if (!response.ok || !data.url) {
+      throw new Error(data.error || "Image upload failed.");
+    }
+
+    return { url: data.url, alt: resolvedAlt };
+  }
+
+  const compressed = await compressImageForEditor(source.file);
+  const payload = new FormData();
+  payload.append("file", compressed.blob, compressed.fileName);
+  payload.append("currentImageCount", String(runningCount));
+
+  const response = await fetch("/api/images/upload", {
+    method: "POST",
+    body: payload,
+    credentials: "include",
+  });
+
+  const data = (await response.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+  };
+
+  if (!response.ok || !data.url) {
+    throw new Error(data.error || "Image upload failed.");
+  }
+
+  return {
+    url: data.url,
+    alt: compressed.fileName.replace(/\.[^.]+$/, ""),
+  };
+}
+
 export interface MarkdownEditorProps {
   value: string;
   onChange: (markdown: string) => void;
@@ -114,7 +251,7 @@ export function MarkdownEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
-        heading: { levels: [1, 2, 3] },
+        heading: { levels: [1, 2, 3, 4, 5, 6] },
         link: {
           openOnClick: false,
           autolink: true,
@@ -311,96 +448,8 @@ export function MarkdownEditor({
       try {
         let runningCount = currentCount;
         for (const source of accepted) {
-          if (source.kind === "url") {
-            let isAlreadyImageKit = false;
-            try {
-              const parsed = new URL(source.url);
-              isAlreadyImageKit = parsed.hostname === "ik.imagekit.io";
-            } catch {
-              isAlreadyImageKit = false;
-            }
-
-            if (isAlreadyImageKit) {
-              insertUploadedImage(
-                source.url,
-                source.alt?.trim() || "image"
-              );
-              runningCount += 1;
-              continue;
-            }
-
-            let fetchedFile: File | null = null;
-            try {
-              const clientRes = await fetch(source.url);
-              if (clientRes.ok) {
-                const blob = await clientRes.blob();
-                if (blob.type.startsWith("image/")) {
-                  const ext = blob.type.split("/")[1]?.split("+")[0] || "png";
-                  fetchedFile = new File([blob], `copied-image.${ext}`, {
-                    type: blob.type,
-                  });
-                }
-              }
-            } catch {
-              fetchedFile = null;
-            }
-
-            const payload = new FormData();
-            let resolvedAlt = source.alt?.trim() || "copied-image";
-
-            if (fetchedFile) {
-              const compressed = await compressImageForEditor(fetchedFile);
-              payload.append("file", compressed.blob, compressed.fileName);
-              resolvedAlt =
-                source.alt?.trim() ||
-                compressed.fileName.replace(/\.[^.]+$/, "");
-            } else {
-              payload.append("imageUrl", source.url);
-            }
-            payload.append("currentImageCount", String(runningCount));
-
-            const response = await fetch("/api/images/upload", {
-              method: "POST",
-              body: payload,
-              credentials: "include",
-            });
-            const data = (await response.json().catch(() => ({}))) as {
-              url?: string;
-              error?: string;
-            };
-            if (!response.ok || !data.url) {
-              throw new Error(data.error || "Image upload failed.");
-            }
-
-            insertUploadedImage(data.url, resolvedAlt);
-            runningCount += 1;
-            continue;
-          }
-
-          const compressed = await compressImageForEditor(source.file);
-          const payload = new FormData();
-          payload.append("file", compressed.blob, compressed.fileName);
-          payload.append("currentImageCount", String(runningCount));
-
-          const response = await fetch("/api/images/upload", {
-            method: "POST",
-            body: payload,
-            credentials: "include",
-          });
-
-          const data = (await response.json().catch(() => ({}))) as {
-            url?: string;
-            error?: string;
-          };
-
-          if (!response.ok || !data.url) {
-            throw new Error(data.error || "Image upload failed.");
-          }
-
-          insertUploadedImage(
-            data.url,
-            compressed.fileName.replace(/\.[^.]+$/, "")
-          );
+          const uploaded = await uploadImageSource(source, runningCount);
+          insertUploadedImage(uploaded.url, uploaded.alt);
           runningCount += 1;
         }
 
@@ -410,7 +459,9 @@ export function MarkdownEditor({
             text: `Uploaded ${accepted.length} image(s). ${skipped} skipped due to the ${MAX_IMAGES_PER_DOCUMENT}-image per-document limit.`,
           });
         }
+        setIsUploadingImage(false);
       } catch (err) {
+        setIsUploadingImage(false);
         setMediaNotice({
           kind: "error",
           text:
@@ -418,8 +469,6 @@ export function MarkdownEditor({
               ? err.message
               : "Failed to upload image to ImageKit.",
         });
-      } finally {
-        setIsUploadingImage(false);
       }
     },
     [getCurrentImageCount, insertUploadedImage, readOnly]
@@ -532,50 +581,28 @@ export function MarkdownEditor({
     void handleUploadImages(dropped);
   }
 
-  async function handleCopySelectedImage() {
+  async function handleCopySelectedImageUrl() {
     if (!selectedImage?.src || typeof navigator === "undefined") return;
     try {
-      const res = await fetch(selectedImage.src, { mode: "cors" });
-      const blob = await res.blob();
-      let pngBlob: Blob = blob;
-
-      if (blob.type !== "image/png" && typeof document !== "undefined") {
-        const bitmapUrl = URL.createObjectURL(blob);
-        try {
-          const imgEl = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const el = new globalThis.Image();
-            el.onload = () => resolve(el);
-            el.onerror = () => reject(new Error("Image decode failed"));
-            el.src = bitmapUrl;
-          });
-          const canvas = document.createElement("canvas");
-          canvas.width = imgEl.naturalWidth || imgEl.width;
-          canvas.height = imgEl.naturalHeight || imgEl.height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(imgEl, 0, 0);
-            const encoded = await new Promise<Blob | null>((resolve) =>
-              canvas.toBlob((b) => resolve(b), "image/png")
-            );
-            if (encoded) pngBlob = encoded;
-          }
-        } finally {
-          URL.revokeObjectURL(bitmapUrl);
-        }
-      }
-
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ [pngBlob.type || "image/png"]: pngBlob }),
-        ]);
-        setCopiedAction("image");
-        window.setTimeout(() => setCopiedAction(null), 1600);
-        return;
-      }
+      await navigator.clipboard.writeText(selectedImage.src);
+      setCopiedAction("url");
+      window.setTimeout(() => setCopiedAction(null), 1600);
     } catch {
-      // Fallback to copying image URL if image binary clipboard is restricted.
+      setMediaNotice({
+        kind: "error",
+        text: "Clipboard access was blocked by the browser.",
+      });
     }
+  }
 
+  async function handleCopySelectedImage() {
+    if (!selectedImage?.src || typeof navigator === "undefined") return;
+    const copied = await copyImageBlobToClipboard(selectedImage.src);
+    if (copied) {
+      setCopiedAction("image");
+      window.setTimeout(() => setCopiedAction(null), 1600);
+      return;
+    }
     await handleCopySelectedImageUrl();
   }
 
@@ -599,20 +626,6 @@ export function MarkdownEditor({
       .focus()
       .updateAttributes("image", { width: nextWidth, height: null })
       .run();
-  }
-
-  async function handleCopySelectedImageUrl() {
-    if (!selectedImage?.src || typeof navigator === "undefined") return;
-    try {
-      await navigator.clipboard.writeText(selectedImage.src);
-      setCopiedAction("url");
-      window.setTimeout(() => setCopiedAction(null), 1600);
-    } catch {
-      setMediaNotice({
-        kind: "error",
-        text: "Clipboard access was blocked by the browser.",
-      });
-    }
   }
 
   function handleMathClick(event: MouseEvent<HTMLDivElement>) {

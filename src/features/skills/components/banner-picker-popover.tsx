@@ -121,10 +121,10 @@ export function BannerPickerPopover({
 
           {isLoading ? (
             <div className="grid grid-cols-2 gap-2">
-              <Skeleton className="h-16 rounded-md" />
-              <Skeleton className="h-16 rounded-md" />
-              <Skeleton className="h-16 rounded-md" />
-              <Skeleton className="h-16 rounded-md" />
+              <Skeleton className="h-28 rounded-md" />
+              <Skeleton className="h-28 rounded-md" />
+              <Skeleton className="h-28 rounded-md" />
+              <Skeleton className="h-28 rounded-md" />
             </div>
           ) : error ? (
             <p className="rounded-md border border-destructive/20 bg-destructive/5 p-2.5 text-xs text-destructive">
@@ -144,7 +144,7 @@ export function BannerPickerPopover({
               No images found for &ldquo;{activeQuery}&rdquo;.
             </p>
           ) : (
-            <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-0.5">
+            <div className="grid max-h-80 grid-cols-2 gap-2 overflow-y-auto pr-0.5">
               {(data?.images ?? []).map((img) => (
                 <button
                   key={img.id}
@@ -157,7 +157,7 @@ export function BannerPickerPopover({
                     src={img.previewUrl}
                     alt={img.alt}
                     referrerPolicy="no-referrer"
-                    className="h-16 w-full object-cover transition-transform group-hover:scale-105"
+                    className="h-28 w-full object-cover transition-transform group-hover:scale-105"
                   />
                 </button>
               ))}

@@ -61,15 +61,15 @@ const MAX_BIO = 200;
 function ImageUrlOrStockPopover({
   label,
   onSelect,
-  children,
+  trigger,
 }: {
   label: string;
   onSelect: (url: string) => void;
-  children: React.ReactNode;
+  trigger: React.ReactElement;
 }) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("minimal portrait");
-  const [activeQuery, setActiveQuery] = useState("minimal portrait");
+  const [query, setQuery] = useState("flower");
+  const [activeQuery, setActiveQuery] = useState("flower");
   const [urlInput, setUrlInput] = useState("");
 
   const { data } = useSWR<{
@@ -82,34 +82,50 @@ function ImageUrlOrStockPopover({
     { revalidateIfStale: false, dedupingInterval: 60_000 }
   );
 
+  function applyQuery() {
+    if (query.trim()) setActiveQuery(query.trim());
+  }
+
+  function applyCustomUrl() {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    onSelect(trimmed);
+    setUrlInput("");
+    setOpen(false);
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger nativeButton={false} render={<span className="inline-flex" />}>
-        {children}
-      </PopoverTrigger>
+      <PopoverTrigger render={trigger} />
       <PopoverContent align="start" className="w-72 p-3">
         <div className="flex flex-col gap-2.5">
           <span className="text-xs font-medium">{label}</span>
           {data?.configured ? (
             <>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (query.trim()) setActiveQuery(query.trim());
-                }}
-                className="flex gap-1.5"
-              >
+              <div className="flex gap-1.5">
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      applyQuery();
+                    }
+                  }}
                   placeholder="Search Pixabay..."
                   className="h-7 text-xs"
                 />
-                <Button type="submit" size="xs" className="h-7">
+                <Button
+                  type="button"
+                  size="xs"
+                  className="h-7"
+                  onClick={applyQuery}
+                >
                   Go
                 </Button>
-              </form>
-              <div className="grid max-h-36 grid-cols-2 gap-1.5 overflow-y-auto">
+              </div>
+              <div className="grid max-h-52 grid-cols-2 gap-1.5 overflow-y-auto">
                 {data.images.map((img) => (
                   <button
                     key={img.id}
@@ -124,7 +140,8 @@ function ImageUrlOrStockPopover({
                     <img
                       src={img.previewUrl}
                       alt={img.alt}
-                      className="h-12 w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      className="h-20 w-full object-cover"
                     />
                   </button>
                 ))}
@@ -132,28 +149,31 @@ function ImageUrlOrStockPopover({
             </>
           ) : null}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (urlInput.trim()) {
-                onSelect(urlInput.trim());
-                setUrlInput("");
-                setOpen(false);
-              }
-            }}
-            className="flex gap-1.5"
-          >
+          <div className="flex gap-1.5">
             <Input
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  applyCustomUrl();
+                }
+              }}
               placeholder="Paste image URL..."
               className="h-7 text-xs"
             />
-            <Button type="submit" variant="outline" size="xs" className="h-7">
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="h-7"
+              onClick={applyCustomUrl}
+            >
               Set
             </Button>
-          </form>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
@@ -294,12 +314,12 @@ function EditProfileFormInner({
       });
       await onSaved();
       setSavedNotice(true);
+      setSaving(false);
     } catch (err) {
+      setSaving(false);
       setErrorMsg(
         err instanceof ApiError ? err.message : "Failed to save profile."
       );
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -321,10 +341,8 @@ function EditProfileFormInner({
             <CardTitle className="text-base font-medium">Edit profile</CardTitle>
             {initial.profile?.username ? (
               <Button
-                type="button"
                 variant="ghost"
                 size="xs"
-                nativeButton={false}
                 render={<Link href={`/${initial.profile.username}`} />}
               >
                 /{initial.profile.username}
@@ -341,6 +359,7 @@ function EditProfileFormInner({
               <img
                 src={bannerImage}
                 alt="Profile banner"
+                referrerPolicy="no-referrer"
                 className="size-full object-cover"
               />
             </>
@@ -349,17 +368,18 @@ function EditProfileFormInner({
             <ImageUrlOrStockPopover
               label="Change banner image"
               onSelect={setBannerImage}
-            >
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon-sm"
-                className="rounded-full bg-black/55 text-white hover:bg-black/75"
-                aria-label="Change banner image"
-              >
-                <ImagePlusIcon />
-              </Button>
-            </ImageUrlOrStockPopover>
+              trigger={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-sm"
+                  className="rounded-full bg-black/55 text-white hover:bg-black/75"
+                  aria-label="Change banner image"
+                >
+                  <ImagePlusIcon />
+                </Button>
+              }
+            />
             {bannerImage ? (
               <Button
                 type="button"
@@ -387,22 +407,23 @@ function EditProfileFormInner({
               <ImageUrlOrStockPopover
                 label="Change avatar image"
                 onSelect={setAvatarImage}
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full text-white hover:bg-black/40"
-                  aria-label="Change avatar image"
-                >
-                  <ImagePlusIcon />
-                </Button>
-              </ImageUrlOrStockPopover>
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full text-white hover:bg-black/40"
+                    aria-label="Change avatar image"
+                  >
+                    <ImagePlusIcon />
+                  </Button>
+                }
+              />
             </div>
           </div>
 
           {errorMsg ? (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="error" className="mb-4">
               <AlertTitle>Unable to save</AlertTitle>
               <AlertDescription>{errorMsg}</AlertDescription>
             </Alert>

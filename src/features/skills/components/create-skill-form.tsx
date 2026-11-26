@@ -8,6 +8,13 @@ import { useSWRConfig } from "swr";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -148,16 +155,16 @@ export function CreateSkillForm() {
         body: JSON.stringify(parsed.data),
       });
       await mutate(swrKeys.skills.list());
+      setSubmitting(false);
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
+      setSubmitting(false);
       if (err instanceof ApiError) {
         setErrorMessage(err.message);
       } else {
         setErrorMessage("Failed to create skill. Please try again.");
       }
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -165,28 +172,30 @@ export function CreateSkillForm() {
 
   return (
     <div className="mx-auto my-auto flex w-full max-w-3xl flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-serif text-3xl font-normal tracking-tight">
-            Create New Skill
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Step {step} of {STEPS.length} - {currentMeta.title}
-          </p>
-        </div>
-        <span className="font-mono text-xs text-muted-foreground">
-          {step}/{STEPS.length}
-        </span>
-      </div>
+      <Card className="border-border">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="font-serif text-3xl font-normal tracking-tight">
+              Create New Skill
+            </CardTitle>
+            <CardDescription>
+              Step {step} of {STEPS.length} - {currentMeta.title}
+            </CardDescription>
+          </div>
+          <span className="font-mono text-xs text-muted-foreground">
+            {step}/{STEPS.length}
+          </span>
+        </CardHeader>
 
-      {errorMessage ? (
-        <Alert variant="destructive">
-          <AlertTitle>Unable to continue</AlertTitle>
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      ) : null}
+        <CardContent className="flex flex-col gap-6">
+          {errorMessage ? (
+            <Alert variant="error">
+              <AlertTitle>Unable to continue</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          ) : null}
 
-      <form onSubmit={handleSubmit} className="overflow-x-hidden">
+          <form onSubmit={handleSubmit} className="overflow-x-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           {step === 1 ? (
             <motion.div
@@ -371,7 +380,9 @@ export function CreateSkillForm() {
             </motion.div>
           )}
         </AnimatePresence>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

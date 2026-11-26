@@ -7,6 +7,14 @@ import {
 } from "@tabler/icons-react";
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameHeader,
+  CardFrameTitle,
+  CardPanel,
+} from "@/components/ui/card";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import {
@@ -179,26 +187,29 @@ export function OnboardingForm({
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-4 text-card-foreground">
-        <div className="mr-2 mb-4 flex items-center justify-between">
-          <h1 className="ml-2 text-balance font-semibold text-foreground">
+      <CardFrame className="w-full max-w-md">
+        <CardFrameHeader>
+          <CardFrameTitle>
             {isEditing ? "Edit your profile" : "Complete your profile"}
-          </h1>
-          <div className="flex items-center">
-            <CircularProgress
-              completed={completedCount}
-              total={STEP_META.length}
-            />
-            <span className="ml-1.5 text-muted-foreground text-sm">
-              <span className="font-medium text-foreground">
-                {completedCount}
-              </span>{" "}
-              / {STEP_META.length}
-            </span>
-          </div>
-        </div>
-
-        <form action={formAction}>
+          </CardFrameTitle>
+          <CardFrameAction>
+            <div className="flex items-center">
+              <CircularProgress
+                completed={completedCount}
+                total={STEP_META.length}
+              />
+              <span className="ml-1.5 text-muted-foreground text-sm">
+                <span className="font-medium text-foreground">
+                  {completedCount}
+                </span>{" "}
+                / {STEP_META.length}
+              </span>
+            </div>
+          </CardFrameAction>
+        </CardFrameHeader>
+        <Card>
+          <CardPanel className="p-4">
+            <form action={formAction}>
           <input type="hidden" name="username" value={username} />
           <input type="hidden" name="displayName" value={displayName} />
           <input type="hidden" name="role" value={role} />
@@ -272,7 +283,7 @@ export function OnboardingForm({
                                 {step.description}
                               </p>
                               <div
-                                className="mt-3 space-y-3"
+                                className="mt-3 space-y-3 px-1 pb-1"
                                 onClick={(e) => e.stopPropagation()}
                                 onKeyDown={(e) => e.stopPropagation()}
                               >
@@ -417,7 +428,9 @@ export function OnboardingForm({
             })}
           </div>
         </form>
-      </div>
+          </CardPanel>
+        </Card>
+      </CardFrame>
     </div>
   );
 }
