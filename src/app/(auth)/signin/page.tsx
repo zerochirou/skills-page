@@ -15,10 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  CardFrame,
+  CardFrameDescription,
+  CardFrameHeader,
+  CardFrameTitle,
+  CardPanel,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -77,12 +78,13 @@ export default function SignInPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Sign in</CardTitle>
-        <CardDescription>Sign in to your account.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <CardFrame>
+      <CardFrameHeader>
+        <CardFrameTitle>Sign in</CardFrameTitle>
+        <CardFrameDescription>Sign in to your account.</CardFrameDescription>
+      </CardFrameHeader>
+      <Card>
+        <CardPanel className="space-y-4">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           {error ? (
             <p
@@ -193,7 +195,7 @@ export default function SignInPage() {
               alt=""
               width={16}
               height={16}
-              className="size-4"
+              className="size-4 dark:invert"
               unoptimized
             />
             GitHub
@@ -209,7 +211,8 @@ export default function SignInPage() {
             Sign up
           </Link>
         </p>
-      </CardContent>
-    </Card>
+        </CardPanel>
+      </Card>
+    </CardFrame>
   );
 }

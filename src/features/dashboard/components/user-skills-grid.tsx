@@ -16,15 +16,8 @@ import { authClient } from "@/features/auth/lib/auth-client";
 import { fetcher, swrKeys } from "@/lib/swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SkillCard } from "@/components/ui/skill-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -240,15 +233,16 @@ export function UserSkillsGrid({
           ))}
         </div>
       ) : (
-        <div className="divide-y divide-border overflow-hidden rounded-[12px] border border-border bg-card">
+        <div className="flex flex-col gap-3">
           {visibleSkills.map((skill) => (
-            <div
+            <Card
               key={skill.id}
               onMouseEnter={() =>
                 void preload(swrKeys.skills.detail(skill.slug), fetcher)
               }
-              className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/30"
+              className="border-border py-0 transition-colors hover:border-hairline-strong"
             >
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
               <Link
                 href={`/dashboard/skills/${skill.slug}`}
                 className="flex min-w-0 flex-1 items-center gap-3.5"
@@ -306,7 +300,8 @@ export function UserSkillsGrid({
                   <Trash2Icon className="size-3.5 text-destructive" />
                 </Button>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -317,15 +312,17 @@ export function UserSkillsGrid({
           if (!open) setDeleteTarget(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete skill</DialogTitle>
-            <DialogDescription>
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Delete skill"
+          description={
+            <>
               Are you sure you want to delete &ldquo;{deleteTarget?.title}&rdquo;?
               This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </>
+          }
+        >
+          <CardFooter className="justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -348,8 +345,8 @@ export function UserSkillsGrid({
             >
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </CardFooter>
+        </FramedDialogContent>
       </Dialog>
     </section>
   );

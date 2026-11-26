@@ -112,15 +112,6 @@ export function DashboardHeader() {
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto md:flex-initial">
         {activeEditorConfig?.headerControls ? (
           <div className="flex shrink-0 items-center gap-2">
-            <BannerPickerPopover
-              currentBanner={activeEditorConfig.headerControls.bannerImage}
-              onSelect={(url) =>
-                activeEditorConfig.headerControls!.onUpdateMeta({
-                  bannerImage: url,
-                })
-              }
-            />
-
             <Select
               value={activeEditorConfig.headerControls.visibility}
               onValueChange={(val) => {
@@ -187,6 +178,15 @@ export function DashboardHeader() {
                 </SelectGroup>
               </SelectContent>
             </Select>
+
+            <BannerPickerPopover
+              currentBanner={activeEditorConfig.headerControls.bannerImage}
+              onSelect={(url) =>
+                activeEditorConfig.headerControls!.onUpdateMeta({
+                  bannerImage: url,
+                })
+              }
+            />
 
             <SkillSettingsSheet
               title={activeEditorConfig.headerControls.title}
