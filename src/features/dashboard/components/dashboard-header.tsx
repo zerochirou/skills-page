@@ -204,7 +204,6 @@ export function DashboardHeader() {
             <Button
               variant="default"
               size="sm"
-              nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
               className="bg-primary text-primary-foreground hover:bg-primary-active"
             >

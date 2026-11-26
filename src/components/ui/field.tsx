@@ -72,6 +72,19 @@ export function FieldError({
   );
 }
 
+export function FieldGroup({
+  className,
+  ...props
+}: React.ComponentProps<"div">): React.ReactElement {
+  return (
+    <div
+      className={cn("flex flex-col gap-5", className)}
+      data-slot="field-group"
+      {...props}
+    />
+  );
+}
+
 export const FieldControl: typeof FieldPrimitive.Control =
   FieldPrimitive.Control;
 export const FieldValidity: typeof FieldPrimitive.Validity =

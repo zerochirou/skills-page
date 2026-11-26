@@ -101,7 +101,6 @@ export function UserSkillsGrid({
             <Button
               variant="ghost"
               size="sm"
-              nativeButton={false}
               render={<Link href="/dashboard/all" />}
             >
               View all ({totalCount})
@@ -141,7 +140,6 @@ export function UserSkillsGrid({
             <Button
               variant="outline"
               size="sm"
-              nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
             >
               <PlusIcon data-icon="inline-start" />

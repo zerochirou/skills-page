@@ -587,7 +587,7 @@ export function SkillEditorWorkspace({
 
   if (error || !data) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="error">
         <AlertTitle>Skill not found</AlertTitle>
         <AlertDescription>
           Unable to load this skill repository.{" "}
@@ -671,7 +671,7 @@ export function SkillEditorWorkspace({
       <Separator />
 
       {actionError ? (
-        <Alert variant="destructive">
+        <Alert variant="error">
           <AlertTitle>Action failed</AlertTitle>
           <AlertDescription>{actionError}</AlertDescription>
         </Alert>

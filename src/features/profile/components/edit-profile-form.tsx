@@ -321,10 +321,8 @@ function EditProfileFormInner({
             <CardTitle className="text-base font-medium">Edit profile</CardTitle>
             {initial.profile?.username ? (
               <Button
-                type="button"
                 variant="ghost"
                 size="xs"
-                nativeButton={false}
                 render={<Link href={`/${initial.profile.username}`} />}
               >
                 /{initial.profile.username}
@@ -402,7 +400,7 @@ function EditProfileFormInner({
           </div>
 
           {errorMsg ? (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="error" className="mb-4">
               <AlertTitle>Unable to save</AlertTitle>
               <AlertDescription>{errorMsg}</AlertDescription>
             </Alert>

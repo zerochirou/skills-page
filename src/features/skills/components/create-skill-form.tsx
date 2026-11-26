@@ -180,7 +180,7 @@ export function CreateSkillForm() {
       </div>
 
       {errorMessage ? (
-        <Alert variant="destructive">
+        <Alert variant="error">
           <AlertTitle>Unable to continue</AlertTitle>
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
