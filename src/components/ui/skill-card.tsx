@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  BookOpen,
   Copy,
   MoreVertical,
   Pencil,
@@ -22,6 +23,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +52,8 @@ export interface SkillCardProps {
   subtitle: string;
   progress?: number;
   timeLeft: string;
+  bannerImage?: string | null;
+  showHeaderBanner?: boolean;
   members?: SkillCardMember[];
   href?: string;
   isOwner?: boolean;
@@ -57,6 +68,8 @@ export function SkillCard({
   title,
   subtitle,
   timeLeft,
+  bannerImage,
+  showHeaderBanner = false,
   members = [
     { name: "Alex", initials: "AL" },
     { name: "Sam", initials: "SM" },
@@ -69,6 +82,7 @@ export function SkillCard({
   onSeeAuthor,
 }: SkillCardProps) {
   const [isPending, setIsPending] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   async function handleAction(action?: () => void | Promise<void>) {
     if (!action || isPending) return;
@@ -81,8 +95,40 @@ export function SkillCard({
   }
 
   return (
-    <Card className="gap-5 rounded-[12px] border-border bg-card py-5 transition-colors hover:border-hairline-strong">
-      <CardHeader className="px-5">
+    <>
+      <Card
+        className={
+          showHeaderBanner
+            ? "gap-5 overflow-hidden rounded-[12px] border-border bg-card pt-0 pb-5 transition-colors hover:border-hairline-strong"
+            : "gap-5 rounded-[12px] border-border bg-card py-5 transition-colors hover:border-hairline-strong"
+        }
+      >
+        {showHeaderBanner ? (
+          <Link
+            href={href}
+            className="relative block h-32 w-full overflow-hidden border-b border-border/60 bg-muted/60"
+          >
+            {bannerImage ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bannerImage}
+                  alt={title}
+                  className="h-full w-full object-cover"
+                />
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted/80 via-background to-accent/60">
+                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/80 px-3 py-1.5 text-xs text-muted-foreground">
+                  <BookOpen className="size-3.5" />
+                  <span className="font-mono">{title.slice(0, 1).toUpperCase() || "S"}</span>
+                </div>
+              </div>
+            )}
+          </Link>
+        ) : null}
+
+        <CardHeader className="px-5">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs text-muted-foreground">
             {date}
@@ -139,9 +185,10 @@ export function SkillCard({
                       <DropdownMenuSeparator />
                       <DropdownMenuGroup>
                         <DropdownMenuItem
+                          variant="destructive"
                           disabled={isPending}
-                          onClick={() => void handleAction(onDelete)}
-                          className="gap-2 text-destructive focus:text-destructive"
+                          onClick={() => setConfirmDeleteOpen(true)}
+                          className="gap-2"
                         >
                           <Trash2 className="size-3.5" />
                           <span>Delete</span>
@@ -208,5 +255,38 @@ export function SkillCard({
         </Badge>
       </CardFooter>
     </Card>
+
+    <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete skill</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete &ldquo;{title}&rdquo;? This action
+            cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isPending}
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              void handleAction(onDelete);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }

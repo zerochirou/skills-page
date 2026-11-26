@@ -19,6 +19,14 @@ import {
 } from "@/features/editor";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, fetcher, swrKeys } from "@/lib/swr";
@@ -92,6 +100,9 @@ export function SkillEditorWorkspace({
   const { mutate } = useSWRConfig();
   const { setConfig: setEditorSidebarConfig } = useEditorSidebar();
   const { data: session } = authClient.useSession();
+  const [confirmDeleteUnitId, setConfirmDeleteUnitId] = useState<number | null>(
+    null,
+  );
 
   const {
     data,
@@ -738,10 +749,9 @@ export function SkillEditorWorkspace({
                     </Button>
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="destructive-outline"
                       size="sm"
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => void handleDeleteUnit(target.unitId)}
+                      onClick={() => setConfirmDeleteUnitId(target.unitId)}
                       title="Delete unit"
                     >
                       <Trash2Icon data-icon="inline-start" />
@@ -773,6 +783,44 @@ export function SkillEditorWorkspace({
           />
         ) : null}
       </div>
+
+      <Dialog
+        open={confirmDeleteUnitId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteUnitId(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete unit</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this unit? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmDeleteUnitId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteUnitId === null) return;
+                const unitIdToDelete = confirmDeleteUnitId;
+                setConfirmDeleteUnitId(null);
+                void handleDeleteUnit(unitIdToDelete);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
