@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
+import { createMetadata } from "@/lib/seo";
 import {
   ArticleLayout,
   type GlossaryItem,
@@ -10,11 +12,14 @@ import {
   ComparisonTable,
 } from "@/components/learning/prose-elements";
 
-export const metadata: Metadata = {
-  title: "Cognitive Ergonomics in Digital Reading | skills-page",
+export const metadata: Metadata = createMetadata({
+  title: "Cognitive Ergonomics in Digital Reading",
   description:
-    "WCAG 2.1 AAA learning layout demo with anti-halation colors, 65ch measure, and Major Third typography.",
-};
+    "WCAG 2.1 AAA learning layout demo with anti-halation colors, 65ch measure, and Major Third typography on Skills Page.",
+  path: "/learn/demo",
+  type: "article",
+  keywords: ["cognitive ergonomics", "digital reading", "skills page demo"],
+});
 
 const TOC: TocItem[] = [
   { id: "cognitive-load", label: "1. Cognitive Load & Chunking", level: 2 },
@@ -55,7 +60,14 @@ export function computeContrastRatio(l1: number, l2: number): number {
 
 export default function LearningDemoPage() {
   return (
-    <ArticleLayout
+    <>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "Learning Ergonomics Demo", path: "/learn/demo" },
+        ])}
+      />
+      <ArticleLayout
       eyebrow="Module 01 · Cognitive Ergonomics"
       title="Designing Distraction-Free E-Learning Interfaces"
       readingTime="6 min read · WCAG 2.1 AAA"
@@ -135,5 +147,6 @@ export default function LearningDemoPage() {
         />
       </section>
     </ArticleLayout>
+    </>
   );
 }

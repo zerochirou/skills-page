@@ -22,12 +22,17 @@ export async function generateMetadata({
   }
 
   const { skill } = data;
-  const description = `Explore ${subSkill.title} in ${skill.title} on Skills Page.`;
+  const description =
+    subSkill.description?.trim() ||
+    `Explore ${subSkill.title} in ${skill.title} on Skills Page.`;
+  const skillPath = `/skills/${owner}/${slug}`;
 
   return createMetadata({
-    title: `${subSkill.title} / ${skill.title}`,
+    title: `${subSkill.title} | ${skill.title}`,
     description,
-    path: `/skills/${owner}/${slug}/sub-skills/${subSkillId}`,
+    path: `${skillPath}/sub-skills/${subSkillId}`,
+    markdownUrl: `${skillPath}/llms.txt`,
+    keywords: [subSkill.title, skill.title, `@${owner}`],
     type: "article",
     og: {
       eyebrow: `@${owner} / ${skill.title}`,

@@ -167,7 +167,7 @@ export function CreateSkillForm() {
     <div className="mx-auto my-auto flex w-full max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-normal tracking-tight">
+          <h1 className="font-serif text-3xl font-normal tracking-tight">
             Create New Skill
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -361,9 +361,9 @@ export function CreateSkillForm() {
                 </Button>
                 <Button
                   type="submit"
-                  variant="outline"
+                  variant="default"
                   disabled={submitting}
-                  className="border-[#f54e00] bg-[#f54e00] text-brand-foreground hover:bg-[#d04200] hover:text-brand-foreground"
+                  className="bg-primary text-primary-foreground hover:bg-primary-active"
                 >
                   {submitting ? "Creating..." : "Create Skill"}
                 </Button>

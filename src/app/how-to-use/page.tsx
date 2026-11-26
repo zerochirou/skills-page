@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRightIcon, BookOpenIcon } from "lucide-react";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import { HomeTemplate } from "@/features/home";
+import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "How to Use | skills-page",
+export const metadata: Metadata = createMetadata({
+  title: "How to Use Skills Page",
   description:
-    "Visual walkthrough of skills-page: dashboard, navigation, skill creation, file tree, Markdown editor, banner picker, and profile settings.",
-};
+    "Visual walkthrough of Skills Page: dashboard, navigation, skill creation, file tree, Markdown editor, MathQuill equations, ImageKit uploads, and profile settings.",
+  path: "/how-to-use",
+  markdownUrl: "/llms.txt",
+  keywords: ["how to use skills page", "skills page guide", "markdown editor guide"],
+});
 
 interface GuideSection {
   step: string;
@@ -72,13 +77,14 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     step: "05",
     title: "Write with the Markdown Editor",
-    subtitle: "Rich editing with GFM tables, lists, and internal [[wiki-links]].",
+    subtitle:
+      "Rich editing with MathQuill equations, ImageKit uploads, and @ wiki-links.",
     image: "/assets/docs/markdown-editor.png",
     alt: "Tiptap Markdown editor with formatting toolbar and Editor/Markdown toggle",
     points: [
       "Format headings, bold, italic, strikethrough, inline code, blockquotes, links, and tables from the toolbar.",
-      "Use Bullet or Ordered lists with Tab / Shift+Tab for indentation.",
-      "Type [[ to insert internal wiki-links to other skills, sub-skills, or units, or toggle to raw Markdown anytime.",
+      "Click the Equation button to write Desmos-style formulas in MathQuill, or paste/drop images compressed automatically to ImageKit (up to 5 per document).",
+      "Type @ or [[ to insert internal wiki-links to other skills, sub-skills, or units, or toggle to raw Markdown anytime.",
     ],
   },
   {
@@ -120,7 +126,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
 ];
 
 const SHORTCUTS = [
-  { key: "[[", action: "Open internal Wiki-Link autocomplete" },
+  { key: "@ / [[", action: "Open internal Wiki-Link autocomplete" },
+  { key: "Cmd / Ctrl + V", action: "Paste & compress image to ImageKit (max 5)" },
   { key: "Tab / Shift+Tab", action: "Indent or outdent list items" },
   { key: "Cmd / Ctrl + S", action: "Save Overview or active Unit" },
   { key: "/", action: "Focus search on the Skills Explorer" },
@@ -129,21 +136,27 @@ const SHORTCUTS = [
 export default function HowToUsePage() {
   return (
     <HomeTemplate>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-20 pt-24 sm:px-6">
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "How to Use", path: "/how-to-use" },
+        ])}
+      />
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
         <header className="flex flex-col gap-4 border-b border-border pb-8">
           <span className="font-mono text-xs tracking-wide text-muted-foreground uppercase">
-            Visual Guide · skills-page
+            Visual Guide · Skills Page
           </span>
-          <h1 className="max-w-2xl text-3xl font-normal tracking-tight text-foreground sm:text-4xl">
-            How to use skills-page
+          <h1 className="max-w-2xl font-serif text-4xl font-normal tracking-tight text-primary sm:text-5xl">
+            How to use Skills Page
           </h1>
           <p className="max-w-2xl text-base leading-relaxed text-muted-foreground">
-            A visual walkthrough of every part of the workspace - from creating
+            A visual walkthrough of every part of the workspace: creating
             a{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
               Skill
             </code>{" "}
-            repository and organizing{" "}
+            repository, organizing{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
               Sub-skills
             </code>{" "}
@@ -151,14 +164,14 @@ export default function HowToUsePage() {
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
               Units
             </code>{" "}
-            to publishing on your profile.
+            , and publishing to your profile.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Button
-              variant="outline"
+              variant="default"
               nativeButton={false}
               render={<Link href="/dashboard/skills/new" />}
-              className="border-[#f54e00] bg-[#f54e00] text-brand-foreground hover:bg-[#d04200] hover:text-brand-foreground"
+              className="bg-primary text-primary-foreground hover:bg-primary-active"
             >
               Create New Skill
               <ArrowRightIcon data-icon="inline-end" />

@@ -1,6 +1,11 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/seo";
+import {
+  getSiteHost,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TAGLINE,
+} from "@/lib/seo";
 
 const KIND_LABELS: Record<string, string> = {
   default: "REPOSITORY",
@@ -60,7 +65,7 @@ export async function GET(request: NextRequest) {
                 width: "14px",
                 height: "14px",
                 borderRadius: "3px",
-                backgroundColor: "#f54e00",
+                backgroundColor: "#312f30",
               }}
             />
             <span
@@ -117,7 +122,7 @@ export async function GET(request: NextRequest) {
                 gap: "10px",
                 fontSize: "18px",
                 fontWeight: 500,
-                color: "#f54e00",
+                color: "#312f30",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -163,7 +168,7 @@ export async function GET(request: NextRequest) {
             color: "#6b695f",
           }}
         >
-          <span>skills.page</span>
+          <span>{getSiteHost()}</span>
           <span>Structured technical skills &amp; modular units</span>
         </div>
       </div>

@@ -65,9 +65,9 @@ function SkillCardSkeleton() {
 export function SkillsExplorerSkeleton() {
   return (
     <section aria-label="Skills leaderboard" className="mb-16">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+      <h2 className="font-serif text-2xl font-normal tracking-tight text-primary sm:text-3xl">
         Skills Leaderboard
-      </p>
+      </h2>
       <Skeleton className="mt-4 h-10 w-full rounded-md" />
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {DISABLED_FILTER_TABS.map((tab) => (
@@ -145,9 +145,9 @@ export function SkillsExplorer({
 
   return (
     <section aria-label="Skills leaderboard" className="mb-16">
-      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+      <h2 className="font-serif text-2xl font-normal tracking-tight text-primary sm:text-3xl">
         Skills Leaderboard
-      </p>
+      </h2>
 
       <div className="relative mt-4">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />

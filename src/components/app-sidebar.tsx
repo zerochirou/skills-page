@@ -7,7 +7,6 @@ import {
   ArrowLeftIcon,
   CompassIcon,
   Folder,
-  FolderGit2Icon,
   HashIcon,
   LayoutDashboardIcon,
   PlusIcon,
@@ -30,6 +29,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const navData = {
@@ -81,6 +81,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { config: editorConfig } = useEditorSidebar();
   const { data: session } = authClient.useSession();
+  const { isMobile, setOpenMobile } = useSidebar();
   const mounted = React.useSyncExternalStore(
     emptySubscribe,
     () => true,
@@ -129,7 +130,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <RepositoryTree embedded {...editorConfig.treeProps} />
+          <RepositoryTree
+            embedded
+            {...editorConfig.treeProps}
+            onSelectOverview={() => {
+              if (isMobile) setOpenMobile(false);
+              editorConfig.treeProps.onSelectOverview();
+            }}
+            onSelectSubSkill={(subSkillId) => {
+              if (isMobile) setOpenMobile(false);
+              editorConfig.treeProps.onSelectSubSkill?.(subSkillId);
+            }}
+            onSelectUnit={(unitId) => {
+              if (isMobile) setOpenMobile(false);
+              editorConfig.treeProps.onSelectUnit(unitId);
+            }}
+          />
         </SidebarContent>
         <SidebarFooter>
           <NavUser />

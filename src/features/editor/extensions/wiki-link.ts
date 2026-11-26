@@ -1,4 +1,5 @@
 import { PluginKey } from "@tiptap/pm/state";
+import type { Editor } from "@tiptap/react";
 import {
   mergeAttributes,
   Node,
@@ -26,7 +27,119 @@ export interface WikiLinkOptions {
 const WIKI_LINK_REGEX = /^\[\[(skill|sub_skill|unit):(\d+)\|([^\]]+)\]\]/;
 const WIKI_LINK_FALLBACK_REGEX = /^\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/;
 
+export const WikiLinkAtPluginKey = new PluginKey("wikiLinkAtSuggestion");
 export const WikiLinkPluginKey = new PluginKey("wikiLinkSuggestion");
+
+function createWikiLinkSuggestionConfig({
+  editor,
+  pluginKey,
+  char,
+  nodeName,
+  getItems,
+}: {
+  editor: Editor;
+  pluginKey: PluginKey;
+  char: string;
+  nodeName: string;
+  getItems: (query: string) => WikiLinkItem[];
+}) {
+  return Suggestion<WikiLinkItem>({
+    editor,
+    pluginKey,
+    char,
+    allowSpaces: true,
+    allowedPrefixes: [" ", "\n"],
+    items: ({ query }) => {
+      const normalized = query.trim().toLowerCase();
+      const all = getItems(normalized);
+      if (!normalized) {
+        return all.slice(0, 8);
+      }
+      return all
+        .filter(
+          (item) =>
+            item.label.toLowerCase().includes(normalized) ||
+            item.subtitle?.toLowerCase().includes(normalized)
+        )
+        .slice(0, 8);
+    },
+    command: ({ editor: activeEditor, range, props }) => {
+      activeEditor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent([
+          {
+            type: nodeName,
+            attrs: {
+              targetType: props.targetType,
+              targetId: props.targetId,
+              label: props.label,
+            },
+          },
+          { type: "text", text: " " },
+        ])
+        .run();
+    },
+    render: () => {
+      let component: ReactRenderer<
+        WikiLinkSuggestionHandle,
+        { items: WikiLinkItem[]; command: (item: WikiLinkItem) => void }
+      > | null = null;
+      let container: HTMLDivElement | null = null;
+
+      const updatePosition = (clientRect?: (() => DOMRect | null) | null) => {
+        if (!container || !clientRect) return;
+        const rect = clientRect();
+        if (!rect) return;
+        container.style.position = "fixed";
+        container.style.left = `${Math.min(rect.left, window.innerWidth - 300)}px`;
+        container.style.top = `${rect.bottom + 6}px`;
+        container.style.zIndex = "50";
+      };
+
+      return {
+        onStart(props) {
+          container = document.createElement("div");
+          document.body.appendChild(container);
+          const renderer = new ReactRenderer(WikiLinkSuggestionList, {
+            props: {
+              items: props.items,
+              command: props.command,
+            },
+            editor: props.editor,
+          });
+          component = renderer;
+          container.appendChild(renderer.element);
+          updatePosition(props.clientRect);
+        },
+        onUpdate(props) {
+          component?.updateProps({
+            items: props.items,
+            command: props.command,
+          });
+          updatePosition(props.clientRect);
+        },
+        onKeyDown(props) {
+          if (props.event.key === "Escape") {
+            container?.remove();
+            container = null;
+            component?.destroy();
+            component = null;
+            return true;
+          }
+          return component?.ref?.onKeyDown(props) ?? false;
+        },
+        onExit() {
+          container?.remove();
+          container = null;
+          component?.destroy();
+          component = null;
+        },
+      };
+    },
+  });
+}
 
 export const WikiLink = Node.create<WikiLinkOptions>({
   name: "wikiLink",
@@ -153,100 +266,19 @@ export const WikiLink = Node.create<WikiLinkOptions>({
     const getItems = this.options.getItems;
 
     return [
-      Suggestion<WikiLinkItem>({
+      createWikiLinkSuggestionConfig({
+        editor: this.editor,
+        pluginKey: WikiLinkAtPluginKey,
+        char: "@",
+        nodeName: this.name,
+        getItems,
+      }),
+      createWikiLinkSuggestionConfig({
         editor: this.editor,
         pluginKey: WikiLinkPluginKey,
         char: "[[",
-        allowSpaces: true,
-        items: ({ query }) => {
-          const normalized = query.trim().toLowerCase();
-          const all = getItems(normalized);
-          if (!normalized) {
-            return all.slice(0, 8);
-          }
-          return all
-            .filter(
-              (item) =>
-                item.label.toLowerCase().includes(normalized) ||
-                item.subtitle?.toLowerCase().includes(normalized)
-            )
-            .slice(0, 8);
-        },
-        command: ({ editor, range, props }) => {
-          editor
-            .chain()
-            .focus()
-            .deleteRange(range)
-            .insertContent([
-              {
-                type: this.name,
-                attrs: {
-                  targetType: props.targetType,
-                  targetId: props.targetId,
-                  label: props.label,
-                },
-              },
-              { type: "text", text: " " },
-            ])
-            .run();
-        },
-        render: () => {
-          let component: ReactRenderer<
-            WikiLinkSuggestionHandle,
-            { items: WikiLinkItem[]; command: (item: WikiLinkItem) => void }
-          > | null = null;
-          let container: HTMLDivElement | null = null;
-
-          const updatePosition = (clientRect?: (() => DOMRect | null) | null) => {
-            if (!container || !clientRect) return;
-            const rect = clientRect();
-            if (!rect) return;
-            container.style.position = "fixed";
-            container.style.left = `${Math.min(rect.left, window.innerWidth - 300)}px`;
-            container.style.top = `${rect.bottom + 6}px`;
-            container.style.zIndex = "50";
-          };
-
-          return {
-            onStart(props) {
-              container = document.createElement("div");
-              document.body.appendChild(container);
-              const renderer = new ReactRenderer(WikiLinkSuggestionList, {
-                props: {
-                  items: props.items,
-                  command: props.command,
-                },
-                editor: props.editor,
-              });
-              component = renderer;
-              container.appendChild(renderer.element);
-              updatePosition(props.clientRect);
-            },
-            onUpdate(props) {
-              component?.updateProps({
-                items: props.items,
-                command: props.command,
-              });
-              updatePosition(props.clientRect);
-            },
-            onKeyDown(props) {
-              if (props.event.key === "Escape") {
-                container?.remove();
-                container = null;
-                component?.destroy();
-                component = null;
-                return true;
-              }
-              return component?.ref?.onKeyDown(props) ?? false;
-            },
-            onExit() {
-              container?.remove();
-              container = null;
-              component?.destroy();
-              component = null;
-            },
-          };
-        },
+        nodeName: this.name,
+        getItems,
       }),
     ];
   },

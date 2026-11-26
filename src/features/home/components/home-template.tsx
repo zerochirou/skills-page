@@ -8,7 +8,7 @@ export interface HomeTemplateProps {
 
 export function HomeTemplate({ children }: HomeTemplateProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-canvas pt-16 text-ink">
+    <div className="flex min-h-screen flex-col bg-canvas text-ink">
       <Navbar />
       <div className="flex-1">{children}</div>
       <Footer />

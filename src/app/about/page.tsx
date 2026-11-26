@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { HomeTemplate } from "@/features/home/components/home-template";
+import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About / skills-page",
+export const metadata: Metadata = createMetadata({
+  title: "About Skills Page",
   description:
-    "Learn about skills-page, an editorial repository workspace for organizing markdown notes, technical references, and reusable skills.",
-};
+    "Learn about Skills Page, an editorial repository workspace for organizing Markdown notes, technical references, equations, and reusable skills.",
+  path: "/about",
+  markdownUrl: "/llms.txt",
+  keywords: ["about skills page", "markdown repository", "technical knowledge base"],
+});
 
 const PRINCIPLES = [
   {
@@ -32,18 +37,24 @@ const PRINCIPLES = [
 export default function AboutPage() {
   return (
     <HomeTemplate>
+      <JsonLd
+        data={buildBreadcrumbJsonLd([
+          { name: "Skills Page", path: "/" },
+          { name: "About", path: "/about" },
+        ])}
+      />
       <main className="mx-auto max-w-5xl px-6 py-20">
         <header className="max-w-2xl">
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            About skills-page
+            About Skills Page
           </p>
-          <h1 className="mt-4 text-4xl font-normal tracking-tight text-ink sm:text-5xl">
+          <h1 className="mt-4 font-serif text-4xl font-normal tracking-tight text-primary sm:text-5xl">
             A calm workspace for technical knowledge.
           </h1>
           <p className="mt-6 text-base leading-relaxed text-body">
-            skills-page is built for developers and teams who want a focused
-            place to write, organize, and share markdown skills, architectural
-            notes, and reusable snippets without visual noise.
+            Skills Page is built for developers and teams who want a focused
+            place to write, organize, and share Markdown skills, architectural
+            notes, equations, and reusable snippets without visual noise.
           </p>
         </header>
 
@@ -74,7 +85,7 @@ export default function AboutPage() {
           className="mt-16 flex flex-col items-start justify-between gap-6 rounded-[12px] border border-hairline bg-surface-card p-8 sm:flex-row sm:items-center"
         >
           <div>
-            <h2 className="text-xl font-normal tracking-tight text-ink">
+            <h2 className="font-serif text-2xl font-normal tracking-tight text-primary">
               Start building your skills repository
             </h2>
             <p className="mt-1.5 text-sm text-body">
@@ -84,7 +95,7 @@ export default function AboutPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/signup"
-              className="inline-flex h-10 items-center justify-center rounded-[8px] bg-[#f54e00] px-4 text-sm font-medium text-white transition-colors hover:bg-[#d04200] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f54e00] focus-visible:ring-offset-2"
+              className="inline-flex h-10 items-center justify-center rounded-[8px] bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               Create workspace
             </Link>

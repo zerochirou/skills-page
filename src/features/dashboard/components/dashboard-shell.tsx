@@ -13,7 +13,7 @@ export function DashboardShell() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-normal tracking-tight">
+        <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
           {isPending ? (
             <Skeleton className="h-8 w-56" />
           ) : (

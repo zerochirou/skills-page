@@ -1,12 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
 
-const PROTECTED_ROUTES = ["/dashboard"];
+const PROTECTED_ROUTES = ["/dashboard", "/onboarding"];
 const AUTH_ROUTES = ["/signin", "/signup"];
+
+const SESSION_COOKIE_NAMES = [
+  "__Secure-better-auth.session_token",
+  "better-auth.session_token",
+  "__Secure-better-auth-session_token",
+  "better-auth-session_token",
+] as const;
+
+function hasSessionCookie(request: NextRequest): boolean {
+  for (const name of SESSION_COOKIE_NAMES) {
+    if (request.cookies.get(name)?.value) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const sessionCookie = getSessionCookie(request);
+  const isAuthenticated = hasSessionCookie(request);
 
   const isProtected = PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
@@ -15,13 +30,13 @@ export function proxy(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  if (isProtected && !sessionCookie) {
+  if (isProtected && !isAuthenticated) {
     const signInUrl = new URL("/signin", request.url);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
 
-  if (isAuthRoute && sessionCookie) {
+  if (isAuthRoute && isAuthenticated) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -29,5 +44,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/signin", "/signup"],
+  matcher: [
+    "/dashboard",
+    "/dashboard/:path*",
+    "/onboarding",
+    "/onboarding/:path*",
+    "/signin",
+    "/signup",
+  ],
 };

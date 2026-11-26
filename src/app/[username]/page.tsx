@@ -3,6 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GlobeIcon } from "lucide-react";
+import {
+  buildBreadcrumbJsonLd,
+  buildProfileJsonLd,
+  JsonLd,
+} from "@/components/seo/json-ld";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SkillCard } from "@/components/ui/skill-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,6 +79,21 @@ async function PublicProfileContent({
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6">
+      <JsonLd
+        data={[
+          buildProfileJsonLd({
+            name: fullName,
+            username: profile.username,
+            bio: profile.bio,
+            website: profile.website,
+            avatarImage: profile.avatarImage,
+          }),
+          buildBreadcrumbJsonLd([
+            { name: "Skills Page", path: "/" },
+            { name: `@${profile.username}`, path: `/${profile.username}` },
+          ]),
+        ]}
+      />
       <section className="overflow-hidden rounded-[12px] border border-border bg-card">
         <div className="relative h-44 w-full bg-muted">
           {profile.bannerImage ? (
@@ -112,7 +132,7 @@ async function PublicProfileContent({
           </div>
 
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-normal tracking-tight text-foreground">
+            <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
               {fullName}
             </h1>
             <p className="font-mono text-xs text-muted-foreground">

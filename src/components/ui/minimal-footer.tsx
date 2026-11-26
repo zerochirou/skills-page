@@ -70,20 +70,20 @@ export function MinimalFooter({
 
   return (
     <footer className="relative border-t border-border bg-canvas text-foreground">
-      <div className="mx-auto max-w-5xl border-x border-border">
+      <div className="mx-auto max-w-7xl border-x border-border">
         <div className="grid grid-cols-6 gap-6 px-4 py-8 sm:px-6 sm:py-10">
           <div className="col-span-6 flex flex-col gap-4 md:col-span-4">
             <Link
               href="/"
-              className="inline-flex w-max items-center gap-2 font-mono text-sm font-medium text-foreground"
+              className="inline-flex w-max items-center gap-2 font-serif text-lg font-normal text-primary"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/favicon.ico"
-                alt="skills-page"
+                alt="Skills Page"
                 className="size-6 rounded-sm"
               />
-              <span>skills-page</span>
+              <span>Skills Page</span>
             </Link>
             <p className="max-w-sm font-mono text-xs leading-relaxed text-muted-foreground text-balance">
               {description}
@@ -140,8 +140,8 @@ export function MinimalFooter({
         </div>
 
         <div className="flex flex-col items-center justify-between gap-2 border-t border-border px-6 py-4 text-xs text-muted-foreground sm:flex-row">
-          <span className="font-mono">skills-page</span>
-          <span>© {year ?? ""} skills-page. All rights reserved.</span>
+          <span className="font-serif text-sm text-primary">Skills Page</span>
+          <span>© {year ?? ""} Skills Page. All rights reserved.</span>
         </div>
       </div>
     </footer>
