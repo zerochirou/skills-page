@@ -6,6 +6,10 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { skills, subSkills, units } from "@/db/schema";
 import { LEADERBOARD_CACHE_TAG } from "@/features/skills/services/leaderboard.service";
+import {
+  countMarkdownImages,
+  MAX_IMAGES_PER_DOCUMENT,
+} from "@/features/editor/lib/image-limit";
 import { getPublicSkillCacheTag } from "@/features/skills/services/public-skill.service";
 import { slugify } from "@/features/skills/utils/slugify";
 import { getAuth } from "@/lib/auth";
@@ -101,6 +105,18 @@ export async function PATCH(
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  if (
+    parsed.data.overview &&
+    countMarkdownImages(parsed.data.overview) > MAX_IMAGES_PER_DOCUMENT
+  ) {
+    return NextResponse.json(
+      {
+        error: `Overview cannot exceed ${MAX_IMAGES_PER_DOCUMENT} embedded images.`,
+      },
       { status: 400 }
     );
   }

@@ -4,6 +4,10 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { skills, subSkills } from "@/db/schema";
+import {
+  countMarkdownImages,
+  MAX_IMAGES_PER_DOCUMENT,
+} from "@/features/editor/lib/image-limit";
 import { getAuth } from "@/lib/auth";
 
 const updateSubSkillSchema = z.object({
@@ -47,6 +51,18 @@ export async function PATCH(
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  if (
+    parsed.data.description &&
+    countMarkdownImages(parsed.data.description) > MAX_IMAGES_PER_DOCUMENT
+  ) {
+    return NextResponse.json(
+      {
+        error: `Sub-skill cannot exceed ${MAX_IMAGES_PER_DOCUMENT} embedded images.`,
+      },
       { status: 400 }
     );
   }

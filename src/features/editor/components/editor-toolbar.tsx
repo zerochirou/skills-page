@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import {
+  AtSignIcon,
   BoldIcon,
-  BracketsIcon,
   Code2Icon,
   CornerDownLeftIcon,
   GitBranchIcon,
   Heading2Icon,
   HighlighterIcon,
+  ImagePlusIcon,
   IndentDecreaseIcon,
   IndentIncreaseIcon,
   ItalicIcon,
@@ -21,6 +22,7 @@ import {
   PlusIcon,
   QuoteIcon,
   Redo2Icon,
+  SigmaIcon,
   StrikethroughIcon,
   SubscriptIcon,
   SuperscriptIcon,
@@ -44,11 +46,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { MAX_IMAGES_PER_DOCUMENT } from "../lib/image-limit";
 
 interface EditorToolbarProps {
   editor: Editor | null;
   mode: "wysiwyg" | "markdown";
+  imageCount: number;
+  isUploadingImage?: boolean;
   onModeChange: (mode: "wysiwyg" | "markdown") => void;
+  onOpenEquationModal: () => void;
+  onUploadImages: (files: File[]) => void;
 }
 
 function ToolbarButton({
@@ -92,13 +99,19 @@ function ToolbarButton({
 export function EditorToolbar({
   editor,
   mode,
+  imageCount,
+  isUploadingImage = false,
   onModeChange,
+  onOpenEquationModal,
+  onUploadImages,
 }: EditorToolbarProps) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRaw = mode === "markdown";
   const inTable = Boolean(editor?.isActive("table"));
+  const imageLimitReached = imageCount >= MAX_IMAGES_PER_DOCUMENT;
 
   function handleOpenLink() {
     if (!editor) return;
@@ -129,6 +142,21 @@ export function EditorToolbar({
 
   return (
     <div className="flex flex-nowrap items-center justify-between gap-2 overflow-x-auto border-b border-border px-2.5 py-1.5">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          if (files.length > 0) {
+            onUploadImages(files);
+          }
+          e.target.value = "";
+        }}
+      />
+
       <div className="flex shrink-0 flex-nowrap items-center gap-0.5">
         <ToolbarButton
           label="Heading 2"
@@ -316,6 +344,24 @@ export function EditorToolbar({
           <CornerDownLeftIcon />
         </ToolbarButton>
         <ToolbarButton
+          label={
+            imageLimitReached
+              ? `Image limit reached (${imageCount}/${MAX_IMAGES_PER_DOCUMENT})`
+              : `Upload image (${imageCount}/${MAX_IMAGES_PER_DOCUMENT})`
+          }
+          disabled={isRaw || !editor || isUploadingImage || imageLimitReached}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <ImagePlusIcon />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Insert equation (MathQuill)"
+          disabled={isRaw || !editor}
+          onClick={onOpenEquationModal}
+        >
+          <SigmaIcon />
+        </ToolbarButton>
+        <ToolbarButton
           label="Embed YouTube"
           disabled={isRaw || !editor}
           onClick={() => {
@@ -379,11 +425,11 @@ export function EditorToolbar({
         ) : null}
 
         <ToolbarButton
-          label="Insert Wiki-Link ([[)"
+          label="Insert Wiki-Link (@)"
           disabled={isRaw || !editor}
-          onClick={() => editor?.chain().focus().insertContent("[[").run()}
+          onClick={() => editor?.chain().focus().insertContent("@").run()}
         >
-          <BracketsIcon />
+          <AtSignIcon />
         </ToolbarButton>
 
         <Separator orientation="vertical" className="mx-1 h-4" />
@@ -404,23 +450,28 @@ export function EditorToolbar({
         </ToolbarButton>
       </div>
 
-      <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
-        <Button
-          type="button"
-          variant={mode === "wysiwyg" ? "secondary" : "ghost"}
-          size="xs"
-          onClick={() => onModeChange("wysiwyg")}
-        >
-          Editor
-        </Button>
-        <Button
-          type="button"
-          variant={mode === "markdown" ? "secondary" : "ghost"}
-          size="xs"
-          onClick={() => onModeChange("markdown")}
-        >
-          Markdown
-        </Button>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
+          {imageCount}/{MAX_IMAGES_PER_DOCUMENT} img
+        </span>
+        <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+          <Button
+            type="button"
+            variant={mode === "wysiwyg" ? "secondary" : "ghost"}
+            size="xs"
+            onClick={() => onModeChange("wysiwyg")}
+          >
+            Editor
+          </Button>
+          <Button
+            type="button"
+            variant={mode === "markdown" ? "secondary" : "ghost"}
+            size="xs"
+            onClick={() => onModeChange("markdown")}
+          >
+            Markdown
+          </Button>
+        </div>
       </div>
     </div>
   );

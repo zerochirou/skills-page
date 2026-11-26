@@ -77,13 +77,14 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     step: "05",
     title: "Write with the Markdown Editor",
-    subtitle: "Rich editing with GFM tables, lists, and internal [[wiki-links]].",
+    subtitle:
+      "Rich editing with MathQuill equations, ImageKit uploads, and @ wiki-links.",
     image: "/assets/docs/markdown-editor.png",
     alt: "Tiptap Markdown editor with formatting toolbar and Editor/Markdown toggle",
     points: [
       "Format headings, bold, italic, strikethrough, inline code, blockquotes, links, and tables from the toolbar.",
-      "Use Bullet or Ordered lists with Tab / Shift+Tab for indentation.",
-      "Type [[ to insert internal wiki-links to other skills, sub-skills, or units, or toggle to raw Markdown anytime.",
+      "Click the Equation button to write Desmos-style formulas in MathQuill, or paste/drop images compressed automatically to ImageKit (up to 5 per document).",
+      "Type @ or [[ to insert internal wiki-links to other skills, sub-skills, or units, or toggle to raw Markdown anytime.",
     ],
   },
   {
@@ -125,7 +126,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
 ];
 
 const SHORTCUTS = [
-  { key: "[[", action: "Open internal Wiki-Link autocomplete" },
+  { key: "@ / [[", action: "Open internal Wiki-Link autocomplete" },
+  { key: "Cmd / Ctrl + V", action: "Paste & compress image to ImageKit (max 5)" },
   { key: "Tab / Shift+Tab", action: "Indent or outdent list items" },
   { key: "Cmd / Ctrl + S", action: "Save Overview or active Unit" },
   { key: "/", action: "Focus search on the Skills Explorer" },

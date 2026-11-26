@@ -5,6 +5,10 @@ import { headers } from "next/headers";
 import { getDb } from "@/db";
 import { skills, subSkills, units } from "@/db/schema";
 import { createSkillSchema } from "@/features/skills/schemas/create-skill.schema";
+import {
+  countMarkdownImages,
+  MAX_IMAGES_PER_DOCUMENT,
+} from "@/features/editor/lib/image-limit";
 import { LEADERBOARD_CACHE_TAG } from "@/features/skills/services/leaderboard.service";
 import { getAuth } from "@/lib/auth";
 
@@ -65,6 +69,14 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
+  if (input.overview && countMarkdownImages(input.overview) > MAX_IMAGES_PER_DOCUMENT) {
+    return NextResponse.json(
+      {
+        error: `Overview cannot exceed ${MAX_IMAGES_PER_DOCUMENT} embedded images.`,
+      },
+      { status: 400 }
+    );
+  }
   const db = await getDb();
 
   const existing = await db
