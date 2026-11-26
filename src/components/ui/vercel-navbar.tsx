@@ -30,22 +30,15 @@ const WORKSPACE_LINKS = [
   { label: "Settings", href: "/dashboard/settings" },
 ] as const;
 
-function InfinityBrandMark({ className }: { className?: string }) {
+function FaviconBrandMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 40 20"
-      fill="none"
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/favicon.ico"
+      alt=""
       aria-hidden="true"
-      className={cn("h-5 w-9 text-primary", className)}
-    >
-      <path
-        d="M11 4.5C7.134 4.5 4 6.962 4 10C4 13.038 7.134 15.5 11 15.5C15.1 15.5 17.4 11.6 20 10C22.6 8.4 24.9 4.5 29 4.5C32.866 4.5 36 6.962 36 10C36 13.038 32.866 15.5 29 15.5C24.9 15.5 22.6 11.6 20 10C17.4 8.4 15.1 4.5 11 4.5Z"
-        stroke="currentColor"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      className={cn("size-7 rounded-sm object-contain", className)}
+    />
   );
 }
 
@@ -89,7 +82,7 @@ export function Header() {
             aria-label="Skills Page Home"
             className="inline-flex items-center gap-2.5 text-primary transition-opacity hover:opacity-80 focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
-            <InfinityBrandMark />
+            <FaviconBrandMark />
             <span className="font-serif text-lg font-normal tracking-[-0.015em] text-primary">
               Skills Page
             </span>
@@ -150,7 +143,7 @@ export function Header() {
               >
                 <SheetHeader className="border-b border-hairline pb-4 text-left">
                   <SheetTitle className="flex items-center gap-2 font-serif text-lg font-normal text-primary">
-                    <InfinityBrandMark className="h-4 w-7" />
+                    <FaviconBrandMark className="size-6" />
                     <span>Skills Page</span>
                   </SheetTitle>
                 </SheetHeader>
