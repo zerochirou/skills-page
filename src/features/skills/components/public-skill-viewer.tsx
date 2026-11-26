@@ -3,10 +3,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeftIcon, ArrowUpRightIcon, FileTextIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  ArrowLeftIcon,
+  ArrowUpRightIcon,
+  FileTextIcon,
+} from "lucide-react";
 import useSWR, { preload } from "swr";
 
 import BranchedMenu, { type BranchedMenuItem } from "@/components/branched-menu";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -541,18 +552,24 @@ export function PublicSkillViewer({
                     <Skeleton className="h-4 w-2/3" />
                   </div>
                 ) : unitError ? (
-                  <div className="flex flex-col items-center gap-3 p-8 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Failed to load unit content.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void retryUnit()}
-                    >
-                      Retry
-                    </Button>
+                  <div className="py-6">
+                    <Alert variant="error">
+                      <AlertCircleIcon />
+                      <AlertTitle>Failed to load unit content</AlertTitle>
+                      <AlertDescription>
+                        Something went wrong while fetching this unit. Please try again.
+                      </AlertDescription>
+                      <AlertAction>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="outline"
+                          onClick={() => void retryUnit()}
+                        >
+                          Retry
+                        </Button>
+                      </AlertAction>
+                    </Alert>
                   </div>
                 ) : unitDetail?.unit.content?.trim() ? (
                   <MarkdownEditor

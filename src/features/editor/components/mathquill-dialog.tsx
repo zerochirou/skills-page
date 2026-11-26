@@ -3,14 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon, KeyboardIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { CardFooter, CardPanel } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { loadMathQuill, type MathQuillField } from "../lib/load-mathquill";
 import "../styles/mathquill.css";
@@ -209,39 +203,13 @@ function MathQuillDialogInner({
   const isEditing = initialTarget.pos !== undefined;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <DialogHeader>
-        <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
-          <DialogTitle className="font-serif text-2xl font-normal tracking-tight text-primary">
-            {isEditing ? "Edit Equation" : "Insert Equation"}
-          </DialogTitle>
-
-          {!isEditing ? (
-            <div
-              role="group"
-              aria-label="Equation layout mode"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 p-0.5"
-            >
-              <Button
-                type="button"
-                size="xs"
-                variant={mode === "inline" ? "secondary" : "ghost"}
-                onClick={() => setMode("inline")}
-              >
-                Inline
-              </Button>
-              <Button
-                type="button"
-                size="xs"
-                variant={mode === "block" ? "secondary" : "ghost"}
-                onClick={() => setMode("block")}
-              >
-                Display
-              </Button>
-            </div>
-          ) : null}
-        </div>
-        <DialogDescription>
+    <FramedDialogContent
+      initialFocus={false}
+      className="sm:max-w-xl"
+      title={isEditing ? "Edit Equation" : "Insert Equation"}
+      titleClassName="font-serif text-2xl font-normal tracking-tight text-primary"
+      description={
+        <>
           Write naturally just like Desmos: type{" "}
           <code className="font-mono text-foreground">a/b</code> for fractions,{" "}
           <code className="font-mono text-foreground">x^2</code> for powers,{" "}
@@ -249,129 +217,157 @@ function MathQuillDialogInner({
           <code className="font-mono text-foreground">sum</code>,{" "}
           <code className="font-mono text-foreground">int</code>, or{" "}
           <code className="font-mono text-foreground">pi</code>.
-        </DialogDescription>
-      </DialogHeader>
-
-      {/* Desmos-style expression input row */}
-      <div className="flex flex-col gap-2">
-        <div
-          onMouseDown={(e) => {
-            if (
-              e.target === e.currentTarget ||
-              !(e.target as HTMLElement).closest(".mq-root-block")
-            ) {
-              e.preventDefault();
-              fieldRef.current?.focus();
-            }
-          }}
-          className="flex min-h-[104px] w-full cursor-text overflow-hidden rounded-xl border border-border bg-card text-foreground transition-colors focus-within:border-primary"
-        >
+        </>
+      }
+      headerAction={
+        !isEditing ? (
           <div
-            aria-hidden="true"
-            className="flex w-10 shrink-0 flex-col items-center justify-center border-r border-border bg-muted/45 font-mono text-[11px] text-muted-foreground select-none"
+            role="group"
+            aria-label="Equation layout mode"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 p-0.5"
           >
-            <span>fx</span>
+            <Button
+              type="button"
+              size="xs"
+              variant={mode === "inline" ? "secondary" : "ghost"}
+              onClick={() => setMode("inline")}
+            >
+              Inline
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant={mode === "block" ? "secondary" : "ghost"}
+              onClick={() => setMode("block")}
+            >
+              Display
+            </Button>
           </div>
-
-          <div className="relative flex flex-1 items-center px-4 py-3">
-            {status === "loading" ? (
-              <span className="text-xs text-muted-foreground">
-                Preparing math input...
-              </span>
-            ) : status === "error" ? (
-              <span className="text-xs text-destructive">
-                {errorMessage ?? "Unable to initialize equation editor."}
-              </span>
-            ) : null}
-
+        ) : undefined
+      }
+    >
+      <form onSubmit={handleSubmit}>
+        <CardPanel className="flex flex-col gap-3">
+          {/* Desmos-style expression input row */}
+          <div
+            onMouseDown={(e) => {
+              if (
+                e.target === e.currentTarget ||
+                !(e.target as HTMLElement).closest(".mq-root-block")
+              ) {
+                e.preventDefault();
+                fieldRef.current?.focus();
+              }
+            }}
+            className="flex min-h-[104px] w-full cursor-text overflow-hidden rounded-xl border border-border bg-card text-foreground transition-colors focus-within:border-primary"
+          >
             <div
-              ref={fieldContainerRef}
-              className={cn(
-                "w-full text-[22px] leading-normal transition-opacity",
-                status !== "ready" && "pointer-events-none opacity-0"
+              aria-hidden="true"
+              className="flex w-10 shrink-0 flex-col items-center justify-center border-r border-border bg-muted/45 font-mono text-[11px] text-muted-foreground select-none"
+            >
+              <span>fx</span>
+            </div>
+
+            <div className="relative flex flex-1 items-center px-4 py-3">
+              {status === "loading" ? (
+                <span className="text-xs text-muted-foreground">
+                  Preparing math input...
+                </span>
+              ) : status === "error" ? (
+                <span className="text-xs text-destructive">
+                  {errorMessage ?? "Unable to initialize equation editor."}
+                </span>
+              ) : null}
+
+              <div
+                ref={fieldContainerRef}
+                className={cn(
+                  "w-full text-[22px] leading-normal transition-opacity",
+                  status !== "ready" && "pointer-events-none opacity-0"
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setShowKeypad((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/35 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <KeyboardIcon className="size-3.5" />
+              <span>{showKeypad ? "Hide Keypad" : "Show Keypad"}</span>
+              {showKeypad ? (
+                <ChevronUpIcon className="size-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronDownIcon className="size-3.5 text-muted-foreground" />
               )}
-            />
+            </button>
+
+            <span className="font-mono">
+              Space exits · Enter inserts
+            </span>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <button
-            type="button"
-            onClick={() => setShowKeypad((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/35 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <KeyboardIcon className="size-3.5" />
-            <span>{showKeypad ? "Hide Keypad" : "Show Keypad"}</span>
-            {showKeypad ? (
-              <ChevronUpIcon className="size-3.5 text-muted-foreground" />
-            ) : (
-              <ChevronDownIcon className="size-3.5 text-muted-foreground" />
-            )}
-          </button>
+          {showKeypad ? (
+            <div
+              aria-label="Desmos math symbols keypad"
+              className="grid grid-cols-4 gap-1.5 rounded-xl border border-border bg-muted/25 p-2 sm:grid-cols-8"
+            >
+              {DESMOS_KEYPAD.map((item) => (
+                <Button
+                  key={item.title}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title={item.title}
+                  disabled={status !== "ready"}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleKeypadClick(item)}
+                  className="h-9 bg-card font-serif text-sm font-normal"
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </CardPanel>
 
-          <span className="font-mono">
-            Space exits · Enter inserts
-          </span>
-        </div>
+        <CardFooter className="items-center justify-between border-t border-border/60 pt-4">
+          {isEditing && onDelete && initialTarget.pos !== undefined ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                onDelete({
+                  mode: initialTarget.mode,
+                  pos: initialTarget.pos!,
+                })
+              }
+            >
+              <Trash2Icon data-icon="inline-start" />
+              Remove
+            </Button>
+          ) : (
+            <span />
+          )}
 
-        {showKeypad ? (
-          <div
-            aria-label="Desmos math symbols keypad"
-            className="grid grid-cols-4 gap-1.5 rounded-xl border border-border bg-muted/25 p-2 sm:grid-cols-8"
-          >
-            {DESMOS_KEYPAD.map((item) => (
-              <Button
-                key={item.title}
-                type="button"
-                variant="outline"
-                size="sm"
-                title={item.title}
-                disabled={status !== "ready"}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleKeypadClick(item)}
-                className="h-9 bg-card font-serif text-sm font-normal"
-              >
-                {item.label}
-              </Button>
-            ))}
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!hasContent}
+              className="bg-primary text-primary-foreground hover:bg-primary-active"
+            >
+              {isEditing ? "Update Equation" : "Insert Equation"}
+            </Button>
           </div>
-        ) : null}
-      </div>
-
-      <DialogFooter className="items-center justify-between sm:justify-between">
-        {isEditing && onDelete && initialTarget.pos !== undefined ? (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() =>
-              onDelete({
-                mode: initialTarget.mode,
-                pos: initialTarget.pos!,
-              })
-            }
-          >
-            <Trash2Icon data-icon="inline-start" />
-            Remove
-          </Button>
-        ) : (
-          <span />
-        )}
-
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={!hasContent}
-            className="bg-primary text-primary-foreground hover:bg-primary-active"
-          >
-            {isEditing ? "Update Equation" : "Insert Equation"}
-          </Button>
-        </div>
-      </DialogFooter>
-    </form>
+        </CardFooter>
+      </form>
+    </FramedDialogContent>
   );
 }
 
@@ -384,17 +380,15 @@ export function MathQuillDialog({
 }: MathQuillDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent initialFocus={false} className="sm:max-w-xl">
-        {open ? (
-          <MathQuillDialogInner
-            key={`${initialTarget.pos ?? "new"}-${initialTarget.mode}-${initialTarget.latex}`}
-            initialTarget={initialTarget}
-            onCancel={() => onOpenChange(false)}
-            onSave={onSave}
-            onDelete={onDelete}
-          />
-        ) : null}
-      </DialogContent>
+      {open ? (
+        <MathQuillDialogInner
+          key={`${initialTarget.pos ?? "new"}-${initialTarget.mode}-${initialTarget.latex}`}
+          initialTarget={initialTarget}
+          onCancel={() => onOpenChange(false)}
+          onSave={onSave}
+          onDelete={onDelete}
+        />
+      ) : null}
     </Dialog>
   );
 }

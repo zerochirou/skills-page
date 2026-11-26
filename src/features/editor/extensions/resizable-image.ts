@@ -1,4 +1,6 @@
 import Image from "@tiptap/extension-image";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { ContentImageView } from "../components/content-image-view";
 
 function parsePositiveInt(raw: unknown): number | null {
   if (typeof raw === "number") {
@@ -157,5 +159,9 @@ export const ResizableImage = Image.extend({
       title: token.title ?? null,
       alt: token.text ?? null,
     });
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ContentImageView);
   },
 });

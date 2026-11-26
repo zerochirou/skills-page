@@ -14,15 +14,8 @@ import {
 } from "lucide-react";
 import BranchedMenu, { type BranchedMenuItem } from "@/components/branched-menu";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogPanel,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { CardFooter, CardPanel } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -349,23 +342,21 @@ export function RepositoryTree({
           if (!open) setNewSubSkillTitle("");
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New sub-skill</DialogTitle>
-            <DialogDescription>
-              Create a new folder to organize related units.
-            </DialogDescription>
-          </DialogHeader>
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="New sub-skill"
+          description="Create a new folder to organize related units."
+        >
           <form onSubmit={submitNewSubSkill} className="flex flex-col">
-            <DialogPanel>
+            <CardPanel>
               <Input
                 autoFocus
                 placeholder="Sub-skill title"
                 value={newSubSkillTitle}
                 onChange={(e) => setNewSubSkillTitle(e.target.value)}
               />
-            </DialogPanel>
-            <DialogFooter>
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -379,9 +370,9 @@ export function RepositoryTree({
               <Button type="submit" disabled={!newSubSkillTitle.trim()}>
                 Create
               </Button>
-            </DialogFooter>
+            </CardFooter>
           </form>
-        </DialogContent>
+        </FramedDialogContent>
       </Dialog>
 
       <Dialog
@@ -390,10 +381,7 @@ export function RepositoryTree({
           if (!open) setUnitPrompt(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>New unit</DialogTitle>
-          </DialogHeader>
+        <FramedDialogContent className="sm:max-w-md" title="New unit">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -405,7 +393,7 @@ export function RepositoryTree({
             }}
             className="flex flex-col"
           >
-            <DialogPanel>
+            <CardPanel>
               <Input
                 autoFocus
                 placeholder="Unit title"
@@ -416,8 +404,8 @@ export function RepositoryTree({
                   )
                 }
               />
-            </DialogPanel>
-            <DialogFooter>
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -431,9 +419,9 @@ export function RepositoryTree({
               >
                 Create
               </Button>
-            </DialogFooter>
+            </CardFooter>
           </form>
-        </DialogContent>
+        </FramedDialogContent>
       </Dialog>
 
       <Dialog
@@ -442,10 +430,7 @@ export function RepositoryTree({
           if (!open) setRenamePrompt(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename sub-skill</DialogTitle>
-          </DialogHeader>
+        <FramedDialogContent className="sm:max-w-md" title="Rename sub-skill">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -458,7 +443,7 @@ export function RepositoryTree({
             }}
             className="flex flex-col"
           >
-            <DialogPanel>
+            <CardPanel>
               <Input
                 autoFocus
                 placeholder="Sub-skill title"
@@ -469,8 +454,8 @@ export function RepositoryTree({
                   )
                 }
               />
-            </DialogPanel>
-            <DialogFooter>
+            </CardPanel>
+            <CardFooter className="justify-end gap-2 border-t border-border/60 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -484,9 +469,9 @@ export function RepositoryTree({
               >
                 Save
               </Button>
-            </DialogFooter>
+            </CardFooter>
           </form>
-        </DialogContent>
+        </FramedDialogContent>
       </Dialog>
 
       <Dialog
@@ -495,15 +480,17 @@ export function RepositoryTree({
           if (!open) setDeletePrompt(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete sub-skill</DialogTitle>
-            <DialogDescription>
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Delete sub-skill"
+          description={
+            <>
               Are you sure you want to delete &ldquo;{deletePrompt?.title}&rdquo;
               and all its units? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </>
+          }
+        >
+          <CardFooter className="justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -522,8 +509,8 @@ export function RepositoryTree({
             >
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </CardFooter>
+        </FramedDialogContent>
       </Dialog>
     </div>
   );

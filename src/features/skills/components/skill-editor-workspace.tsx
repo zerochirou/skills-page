@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertCircleIcon,
   CheckIcon,
   CopyIcon,
   FileTextIcon,
@@ -17,16 +18,15 @@ import {
   DocumentEditorCard,
   type WikiLinkItem,
 } from "@/features/editor";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { CardFooter } from "@/components/ui/card";
+import { Dialog, FramedDialogContent } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, fetcher, swrKeys } from "@/lib/swr";
@@ -81,6 +81,13 @@ export interface SkillEditorInitialData {
   skill: SkillRecord;
   subSkills: SubSkillRecord[];
   units: UnitSummaryRecord[];
+}
+
+const AUTOSAVE_DELAY_MS = 4000;
+const DRAFT_STORAGE_PREFIX = "skills-page:draft:";
+
+function getDraftStorageKey(slug: string, draftKey: string): string {
+  return `${DRAFT_STORAGE_PREFIX}${slug}:${draftKey}`;
 }
 
 export function SkillEditorWorkspace({
@@ -140,6 +147,9 @@ export function SkillEditorWorkspace({
   );
 
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const draftsRef = useRef(drafts);
+  const lastSavedRef = useRef<Record<string, string>>({});
+  const inFlightSaveRef = useRef<string | null>(null);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "unsaved">(
     "saved"
   );
@@ -193,9 +203,50 @@ export function SkillEditorWorkspace({
     ];
   }, [data]);
 
+  useEffect(() => {
+    draftsRef.current = drafts;
+  }, [drafts]);
+
+  useEffect(() => {
+    lastSavedRef.current[draftKey] = serverMarkdown;
+    try {
+      const cached = window.localStorage.getItem(
+        getDraftStorageKey(slug, draftKey)
+      );
+      if (cached !== null && cached !== serverMarkdown) {
+        queueMicrotask(() => {
+          setDrafts((prev) =>
+            draftKey in prev ? prev : { ...prev, [draftKey]: cached }
+          );
+          setSaveState("unsaved");
+        });
+      }
+    } catch {
+      // Ignore storage access errors in restricted environments
+    }
+  }, [slug, draftKey, serverMarkdown]);
+
   const handleSave = useCallback(async () => {
     if (!data) return;
-    const contentToSave = drafts[draftKey] ?? serverMarkdown;
+    const contentToSave = draftsRef.current[draftKey] ?? serverMarkdown;
+    const lastSaved = lastSavedRef.current[draftKey] ?? serverMarkdown;
+    const storageKey = getDraftStorageKey(slug, draftKey);
+
+    // Smart cache: skip server PATCH when content matches the last saved state
+    if (contentToSave === lastSaved) {
+      try {
+        window.localStorage.removeItem(storageKey);
+      } catch {
+        // Ignore storage errors
+      }
+      setSaveState("saved");
+      return;
+    }
+
+    const saveSignature = `${draftKey}:${contentToSave}`;
+    if (inFlightSaveRef.current === saveSignature) return;
+
+    inFlightSaveRef.current = saveSignature;
     setSaveState("saving");
     setActionError(null);
 
@@ -205,40 +256,88 @@ export function SkillEditorWorkspace({
           method: "PATCH",
           body: JSON.stringify({ overview: contentToSave }),
         });
-        await mutate(swrKeys.skills.detail(slug));
+        await mutate<SkillEditorInitialData>(
+          swrKeys.skills.detail(slug),
+          (prev) =>
+            prev
+              ? { ...prev, skill: { ...prev.skill, overview: contentToSave } }
+              : prev,
+          { revalidate: false }
+        );
       } else if (target.kind === "subSkill") {
         await fetcher(`/api/skills/${slug}/sub-skills/${target.subSkillId}`, {
           method: "PATCH",
           body: JSON.stringify({ description: contentToSave }),
         });
-        await mutate(swrKeys.skills.detail(slug));
+        await mutate<SkillEditorInitialData>(
+          swrKeys.skills.detail(slug),
+          (prev) =>
+            prev
+              ? {
+                  ...prev,
+                  subSkills: prev.subSkills.map((s) =>
+                    s.id === target.subSkillId
+                      ? { ...s, description: contentToSave }
+                      : s
+                  ),
+                }
+              : prev,
+          { revalidate: false }
+        );
       } else {
         await fetcher(`/api/skills/${slug}/units/${target.unitId}`, {
           method: "PATCH",
           body: JSON.stringify({ content: contentToSave }),
         });
-        await mutate(swrKeys.skills.unit(slug, target.unitId));
+        await mutate<{ unit: UnitDetailRecord }>(
+          swrKeys.skills.unit(slug, target.unitId),
+          (prev) =>
+            prev
+              ? { unit: { ...prev.unit, content: contentToSave } }
+              : prev,
+          { revalidate: false }
+        );
       }
-      setDrafts((prev) => {
-        if (!(draftKey in prev)) return prev;
-        const next = { ...prev };
-        delete next[draftKey];
-        return next;
-      });
-      setSaveState("saved");
+
+      lastSavedRef.current[draftKey] = contentToSave;
+
+      // Preserve newer edits made while PATCH was in flight
+      const latestDraft = draftsRef.current[draftKey];
+      if (latestDraft === undefined || latestDraft === contentToSave) {
+        try {
+          window.localStorage.removeItem(storageKey);
+        } catch {
+          // Ignore storage errors
+        }
+        setDrafts((prev) => {
+          if (!(draftKey in prev)) return prev;
+          const next = { ...prev };
+          delete next[draftKey];
+          return next;
+        });
+        setSaveState("saved");
+      } else {
+        setSaveState("unsaved");
+      }
+      if (inFlightSaveRef.current === saveSignature) {
+        inFlightSaveRef.current = null;
+      }
     } catch (err) {
+      if (inFlightSaveRef.current === saveSignature) {
+        inFlightSaveRef.current = null;
+      }
       setSaveState("unsaved");
       setActionError(
         err instanceof ApiError ? err.message : "Failed to save changes."
       );
     }
-  }, [data, draftKey, drafts, mutate, serverMarkdown, slug, target]);
+  }, [data, draftKey, mutate, serverMarkdown, slug, target]);
 
   useEffect(() => {
     if (saveState !== "unsaved") return;
     const timer = setTimeout(() => {
       void handleSave();
-    }, 1500);
+    }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [saveState, drafts, draftKey, handleSave]);
 
@@ -598,15 +697,25 @@ export function SkillEditorWorkspace({
 
   if (error || !data) {
     return (
-      <Alert variant="error">
-        <AlertTitle>Skill not found</AlertTitle>
-        <AlertDescription>
-          Unable to load this skill repository.{" "}
-          <Link href="/dashboard" className="underline">
-            Return to dashboard
-          </Link>
-        </AlertDescription>
-      </Alert>
+      <div className="mx-auto max-w-lg py-12">
+        <Alert variant="error">
+          <AlertCircleIcon />
+          <AlertTitle>Skill not found</AlertTitle>
+          <AlertDescription>
+            Unable to load this skill repository. It may have been deleted or you
+            may not have access.
+          </AlertDescription>
+          <AlertAction>
+            <Button
+              variant="outline"
+              size="xs"
+              render={<Link href="/dashboard" />}
+            >
+              Dashboard
+            </Button>
+          </AlertAction>
+        </Alert>
+      </div>
     );
   }
 
@@ -715,7 +824,23 @@ export function SkillEditorWorkspace({
               value={currentMarkdown}
               onChange={(nextMd) => {
                 setDrafts((prev) => ({ ...prev, [draftKey]: nextMd }));
-                setSaveState("unsaved");
+                const lastSaved = lastSavedRef.current[draftKey] ?? serverMarkdown;
+                const storageKey = getDraftStorageKey(slug, draftKey);
+                if (nextMd === lastSaved) {
+                  try {
+                    window.localStorage.removeItem(storageKey);
+                  } catch {
+                    // Ignore storage errors
+                  }
+                  setSaveState("saved");
+                } else {
+                  try {
+                    window.localStorage.setItem(storageKey, nextMd);
+                  } catch {
+                    // Ignore storage errors
+                  }
+                  setSaveState("unsaved");
+                }
               }}
               wikiLinkItems={wikiLinkItems}
               onWikiLinkClick={(wikiTarget) => {
@@ -790,15 +915,12 @@ export function SkillEditorWorkspace({
           if (!open) setConfirmDeleteUnitId(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete unit</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this unit? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+        <FramedDialogContent
+          className="sm:max-w-md"
+          title="Delete unit"
+          description="Are you sure you want to delete this unit? This action cannot be undone."
+        >
+          <CardFooter className="justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -818,8 +940,8 @@ export function SkillEditorWorkspace({
             >
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </CardFooter>
+        </FramedDialogContent>
       </Dialog>
     </div>
   );
