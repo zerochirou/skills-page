@@ -1,3 +1,4 @@
+import { DONATION_ENABLED } from "@/features/donation/config";
 import { getSeoIndexSnapshot } from "@/features/skills/services/seo.service";
 import { getSiteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
@@ -18,7 +19,11 @@ export async function GET() {
     `- [Explore Skills](${siteUrl}/skills): Searchable directory of all published public skills.`,
     `- [How to Use](${siteUrl}/how-to-use): Step-by-step guide to creating skills, sub-skills, units, and rich content.`,
     `- [About Skills Page](${siteUrl}/about): Architecture principles and overview of the repository workspace.`,
-    `- [Donate & Support](${siteUrl}/donation): Information on supporting infrastructure, media delivery, and open technical education.`,
+    ...(DONATION_ENABLED
+      ? [
+          `- [Donate & Support](${siteUrl}/donation): Information on supporting infrastructure, media delivery, and open technical education.`,
+        ]
+      : []),
     `- [Full LLM Catalog](${siteUrl}/llms-full.txt): Extended Markdown export of public skill repositories and unit indexes.`,
     `- [Sitemap](${siteUrl}/sitemap.xml): XML sitemap of public skills, units, and creator profiles.`,
     "",

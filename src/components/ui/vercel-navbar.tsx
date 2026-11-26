@@ -7,6 +7,7 @@ import { Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { authClient } from "@/lib/auth-client";
+import { DONATION_ENABLED } from "@/features/donation/config";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,7 @@ const SUB_NAV_LINKS = [
   { label: "How to Use", href: "/how-to-use" },
   { label: "Leaderboard", href: "/skills" },
   { label: "About", href: "/about" },
-  { label: "Donate", href: "/donation" },
+  ...(DONATION_ENABLED ? ([{ label: "Donate", href: "/donation" }] as const) : []),
 ] as const;
 
 const WORKSPACE_LINKS = [

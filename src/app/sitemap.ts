@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { DONATION_ENABLED } from "@/features/donation/config";
 import { getSeoIndexSnapshot } from "@/features/skills/services/seo.service";
 import { getSiteUrl } from "@/lib/seo";
 
@@ -31,12 +32,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.7,
     },
-    {
-      url: `${siteUrl}/donation`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.65,
-    },
+    ...(DONATION_ENABLED
+      ? [
+          {
+            url: `${siteUrl}/donation`,
+            lastModified: now,
+            changeFrequency: "monthly" as const,
+            priority: 0.65,
+          },
+        ]
+      : []),
     {
       url: `${siteUrl}/learn/demo`,
       lastModified: now,

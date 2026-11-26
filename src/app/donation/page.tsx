@@ -1,24 +1,35 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { buildBreadcrumbJsonLd, JsonLd } from "@/components/seo/json-ld";
 import { DonationPanel } from "@/features/donation/components/donation-panel";
+import { DONATION_ENABLED } from "@/features/donation/config";
 import { HomeTemplate } from "@/features/home/components/home-template";
 import { createMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = createMetadata({
-  title: "Donate & Support Skills Page",
-  description:
-    "Support Skills Page via GoPay to help keep technical knowledge open, fast, and free from ads or paywalls.",
-  path: "/donation",
-  markdownUrl: "/llms.txt",
-  keywords: [
-    "donate skills page",
-    "support skills page",
-    "gopay skills page donation",
-  ],
-});
+export const metadata: Metadata = DONATION_ENABLED
+  ? createMetadata({
+      title: "Donate & Support Skills Page",
+      description:
+        "Support Skills Page via GoPay to help keep technical knowledge open, fast, and free from ads or paywalls.",
+      path: "/donation",
+      markdownUrl: "/llms.txt",
+      keywords: [
+        "donate skills page",
+        "support skills page",
+        "gopay skills page donation",
+      ],
+    })
+  : {
+      title: "Page Not Found",
+      robots: { index: false, follow: false },
+    };
 
 export default function DonationPage() {
+  if (!DONATION_ENABLED) {
+    notFound();
+  }
+
   return (
     <HomeTemplate>
       <JsonLd

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { DONATION_ENABLED } from "@/features/donation/config";
 import { getSiteUrl } from "@/lib/seo";
 
 const PRIVATE_PATHS = [
@@ -10,9 +11,20 @@ const PRIVATE_PATHS = [
   "/api/auth/",
   "/api/images/",
   "/api/user/",
+  ...(!DONATION_ENABLED ? ["/donation"] : []),
 ];
 
-const PUBLIC_PATHS = ["/", "/skills", "/about", "/how-to-use", "/donation", "/learn/demo", "/llms.txt", "/llms-full.txt", "/api/og"];
+const PUBLIC_PATHS = [
+  "/",
+  "/skills",
+  "/about",
+  "/how-to-use",
+  ...(DONATION_ENABLED ? ["/donation"] : []),
+  "/learn/demo",
+  "/llms.txt",
+  "/llms-full.txt",
+  "/api/og",
+];
 
 export default function robots(): MetadataRoute.Robots {
   const siteUrl = getSiteUrl();
