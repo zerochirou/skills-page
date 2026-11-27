@@ -150,6 +150,7 @@ export function SkillEditorWorkspace({
   const draftsRef = useRef(drafts);
   const lastSavedRef = useRef<Record<string, string>>({});
   const inFlightSaveRef = useRef<string | null>(null);
+  const autosavePausedRef = useRef(false);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "unsaved">(
     "saved"
   );
@@ -247,6 +248,7 @@ export function SkillEditorWorkspace({
     if (inFlightSaveRef.current === saveSignature) return;
 
     inFlightSaveRef.current = saveSignature;
+    autosavePausedRef.current = false;
     setSaveState("saving");
     setActionError(null);
 
@@ -326,6 +328,7 @@ export function SkillEditorWorkspace({
       if (inFlightSaveRef.current === saveSignature) {
         inFlightSaveRef.current = null;
       }
+      autosavePausedRef.current = true;
       setSaveState("unsaved");
       setActionError(
         err instanceof ApiError ? err.message : "Failed to save changes."
@@ -334,7 +337,7 @@ export function SkillEditorWorkspace({
   }, [data, draftKey, mutate, serverMarkdown, slug, target]);
 
   useEffect(() => {
-    if (saveState !== "unsaved") return;
+    if (saveState !== "unsaved" || autosavePausedRef.current) return;
     const timer = setTimeout(() => {
       void handleSave();
     }, AUTOSAVE_DELAY_MS);
@@ -839,6 +842,7 @@ export function SkillEditorWorkspace({
                   } catch {
                     // Ignore storage errors
                   }
+                  autosavePausedRef.current = false;
                   setSaveState("unsaved");
                 }
               }}

@@ -73,17 +73,20 @@ export function DashboardHeader() {
           orientation="vertical"
           className="mr-2 shrink-0 data-vertical:h-4 data-vertical:self-auto"
         />
-        <Breadcrumb className="hidden min-w-0 flex-1 md:block">
-          <BreadcrumbList className="flex-nowrap">
+        <Breadcrumb className="hidden min-w-0 flex-1 overflow-hidden md:block">
+          <BreadcrumbList className="flex-nowrap overflow-hidden">
             {crumbs.map((crumb, index) => {
               const isLast = index === crumbs.length - 1;
+              const isFixedPrefix = index < 2 && !isLast;
               return (
                 <Fragment key={`${crumb.label}-${index}`}>
                   <BreadcrumbItem
                     className={
                       index === 0 && crumbs.length > 1
-                        ? "hidden min-w-0 md:inline-flex"
-                        : "min-w-0"
+                        ? "hidden shrink-0 whitespace-nowrap md:inline-flex"
+                        : isFixedPrefix
+                          ? "shrink-0 whitespace-nowrap"
+                          : "min-w-0 max-w-[140px] lg:max-w-[220px]"
                     }
                   >
                     {isLast || !crumb.href ? (
@@ -91,7 +94,14 @@ export function DashboardHeader() {
                         {crumb.label}
                       </BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink render={<Link href={crumb.href} />}>
+                      <BreadcrumbLink
+                        className={
+                          isFixedPrefix
+                            ? "whitespace-nowrap"
+                            : "block truncate"
+                        }
+                        render={<Link href={crumb.href} />}
+                      >
                         {crumb.label}
                       </BreadcrumbLink>
                     )}
@@ -99,7 +109,9 @@ export function DashboardHeader() {
                   {!isLast ? (
                     <BreadcrumbSeparator
                       className={
-                        index === 0 ? "hidden md:inline-flex" : undefined
+                        index === 0
+                          ? "hidden shrink-0 md:inline-flex"
+                          : "shrink-0"
                       }
                     />
                   ) : null}

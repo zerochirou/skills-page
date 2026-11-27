@@ -83,22 +83,16 @@ export function MinimalFooter({
       <div className="mx-auto max-w-7xl border-x border-border">
         <div className="grid grid-cols-6 gap-6 px-4 py-8 sm:px-6 sm:py-10">
           <div className="col-span-6 flex flex-col gap-4 md:col-span-4">
-            <Link
-              href="/"
-              className="inline-flex w-max items-center gap-2 text-lg font-semibold text-primary"
-            >
-              { }
-              <span className="flex items-center flex-row gap-1">
+            <div className="inline-flex w-max items-center gap-2 text-lg font-semibold text-primary">
+              <Link href="/" className="flex items-center flex-row gap-1">
                 <img
                   src="/favicon.ico"
                   alt="Skills Page"
                   className="size-6 rounded-sm"
                 />
                 <span>Skills Page</span>
-              </span>
+              </Link>
               <span className="font-normal text-muted-foreground">×</span>
-              { }
-
               <a
                 href="https://zerochirou.com"
                 className="flex items-center flex-row gap-1"
@@ -110,7 +104,7 @@ export function MinimalFooter({
                 />
                 <span>Zerochirou</span>
               </a>
-            </Link>
+            </div>
             <p className="max-w-sm font-mono text-xs leading-relaxed text-muted-foreground text-balance">
               {description}
             </p>
