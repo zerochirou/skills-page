@@ -12,7 +12,7 @@ import { getAuth } from "@/lib/auth";
 
 const updateSubSkillSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120).optional(),
-  description: z.string().max(10000).nullable().optional(),
+  description: z.string().nullable().optional(),
 });
 
 async function verifySkillOwner(slug: string, userId: string) {
